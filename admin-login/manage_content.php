@@ -260,58 +260,73 @@ $about_features = getAboutFeatures();
                     <div class="tab-pane fade show active" id="hero" role="tabpanel">
                         <div class="row">
                             <div class="col-md-6">
-                                <form id="heroForm" action="handlers/hero_handler.php" method="POST" enctype="multipart/form-data">
-                                    <input type="hidden" name="old_image" value="<?php echo htmlspecialchars($hero_content['hero_image'] ?? ''); ?>">
-                                    <input type="hidden" name="old_video" value="<?php echo htmlspecialchars($hero_content['video_url'] ?? ''); ?>">
-                                    
-                                    <div class="mb-3">
-                                        <label for="hero_heading" class="form-label">Heading</label>
-                                        <input type="text" class="form-control" id="hero_heading" name="heading" 
-                                               value="<?php echo htmlspecialchars($hero_content['heading'] ?? ''); ?>" required>
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Edit Hero Section</h5>
                                     </div>
+                                    <div class="card-body">
+                                        <form id="heroForm" enctype="multipart/form-data">
+                                            <input type="hidden" name="old_image" value="<?php echo htmlspecialchars($hero_content['hero_image'] ?? ''); ?>">
+                                            <input type="hidden" name="old_video" value="<?php echo htmlspecialchars($hero_content['video_url'] ?? ''); ?>">
+                                            
+                                            <div class="mb-3">
+                                                <label for="hero_heading" class="form-label">Heading</label>
+                                                <input type="text" class="form-control" id="hero_heading" name="heading" 
+                                                       value="<?php echo htmlspecialchars($hero_content['heading'] ?? ''); ?>" required>
+                                            </div>
 
-                                    <div class="mb-3">
-                                        <label for="hero_subheading" class="form-label">Subheading</label>
-                                        <textarea class="form-control" id="hero_subheading" name="subheading" rows="3"><?php echo htmlspecialchars($hero_content['subheading'] ?? ''); ?></textarea>
+                                            <div class="mb-3">
+                                                <label for="hero_subheading" class="form-label">Subheading</label>
+                                                <textarea class="form-control" id="hero_subheading" name="subheading" rows="3"><?php echo htmlspecialchars($hero_content['subheading'] ?? ''); ?></textarea>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="hero_image" class="form-label">Hero Background Image</label>
+                                                <input type="file" class="form-control" id="hero_image" name="hero_image" accept="image/*">
+                                                <small class="text-muted">Recommended size: 1920x1080px. Max size: 5MB</small>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="hero_video" class="form-label">Hero Video</label>
+                                                <input type="file" class="form-control" id="hero_video" name="hero_video" accept="video/mp4,video/webm">
+                                                <small class="text-muted">Max size: 50MB. Supported formats: MP4, WEBM</small>
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-save"></i> Save Changes
+                                            </button>
+                                        </form>
                                     </div>
-
-                                    <div class="mb-3">
-                                        <label for="hero_image" class="form-label">Hero Background Image</label>
-                                        <input type="file" class="form-control" id="hero_image" name="hero_image" accept="image/*">
-                                        <small class="text-muted">Recommended size: 1920x1080px. Max size: 5MB</small>
-                                    </div>
-
-                                    <div class="mb-3">
-                                        <label for="hero_video" class="form-label">Hero Video</label>
-                                        <input type="file" class="form-control" id="hero_video" name="hero_video" accept="video/mp4,video/webm">
-                                        <small class="text-muted">Max size: 50MB. Supported formats: MP4, WEBM</small>
-                                    </div>
-
-                                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                                </form>
+                                </div>
                             </div>
                             
                             <div class="col-md-6">
-                                <h4>Preview</h4>
-                                <div class="preview-box border rounded p-3">
-                                    <div id="imagePreview" class="mb-3">
-                                        <?php if (!empty($hero_content['hero_image'])): ?>
-                                            <img src="../uploads/hero/<?php echo htmlspecialchars($hero_content['hero_image']); ?>" 
-                                                 alt="Current hero image" class="img-fluid">
-                                        <?php endif; ?>
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">Preview</h5>
                                     </div>
-                                    
-                                    <div id="videoPreview" class="mb-3">
-                                        <?php if (!empty($hero_content['video_url'])): ?>
-                                            <video width="100%" controls>
-                                                <source src="../uploads/hero/<?php echo htmlspecialchars($hero_content['video_url']); ?>" type="video/mp4">
-                                                Your browser does not support the video tag.
-                                            </video>
-                                        <?php endif; ?>
+                                    <div class="card-body">
+                                        <div class="preview-box border rounded p-3">
+                                            <div id="imagePreview" class="mb-3">
+                                                <?php if (!empty($hero_content['hero_image'])): ?>
+                                                    <img src="../uploads/hero/<?php echo htmlspecialchars($hero_content['hero_image']); ?>" 
+                                                         alt="Current hero image" class="img-fluid">
+                                                <?php endif; ?>
+                                            </div>
+                                            
+                                            <div id="videoPreview" class="mb-3">
+                                                <?php if (!empty($hero_content['video_url'])): ?>
+                                                    <video width="100%" controls>
+                                                        <source src="../uploads/hero/<?php echo htmlspecialchars($hero_content['video_url']); ?>" type="video/mp4">
+                                                        Your browser does not support the video tag.
+                                                    </video>
+                                                <?php endif; ?>
+                                            </div>
+                                            
+                                            <h2 id="headingPreview"><?php echo htmlspecialchars($hero_content['heading'] ?? ''); ?></h2>
+                                            <p id="subheadingPreview"><?php echo htmlspecialchars($hero_content['subheading'] ?? ''); ?></p>
+                                        </div>
                                     </div>
-                                    
-                                    <h2 id="headingPreview"><?php echo htmlspecialchars($hero_content['heading'] ?? ''); ?></h2>
-                                    <p id="subheadingPreview"><?php echo htmlspecialchars($hero_content['subheading'] ?? ''); ?></p>
                                 </div>
                             </div>
                         </div>
@@ -359,41 +374,34 @@ $about_features = getAboutFeatures();
                                             </div>
                                             
                                             <div id="menuImagePreview" class="mb-3 d-none">
-                                                <div class="position-relative">
-                                                    <img src="" alt="Preview" class="img-fluid rounded">
-                                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
-                                                            onclick="clearMenuImage()">
-                                                        <i class="bi bi-x"></i>
-                                                    </button>
-                                                </div>
+                                                <img src="" alt="Preview" class="img-fluid rounded">
                                             </div>
 
                                             <div class="mb-3">
                                                 <label for="menuName" class="form-label">Item Name*</label>
-                                                <input type="text" class="form-control" id="menuName" name="name" required
-                                                       minlength="2" maxlength="100">
-                                                <div class="invalid-feedback">Please enter an item name (2-100 characters)</div>
+                                                <input type="text" class="form-control" id="menuName" name="name" required>
+                                                <div class="invalid-feedback">Please enter a name</div>
                                             </div>
 
-                                            <div class="row mb-3">
-                                                <div class="col-md-6">
-                                                    <label for="menuCategory" class="form-label">Category*</label>
-                                                    <select class="form-control" id="menuCategory" name="category_id" required>
-                                                        <?php foreach ($menu_categories as $category): ?>
-                                                            <option value="<?php echo $category['id']; ?>">
-                                                                <?php echo htmlspecialchars($category['name']); ?>
-                                                            </option>
-                                                        <?php endforeach; ?>
-                                                    </select>
-                                                    <div class="invalid-feedback">Please select a category</div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="menuPrice" class="form-label">Price*</label>
-                                                    <div class="input-group">
-                                                        <span class="input-group-text">ETB</span>
-                                                        <input type="number" class="form-control" id="menuPrice" name="price" 
-                                                               step="0.01" min="0" required>
-                                                    </div>
+                                            <div class="mb-3">
+                                                <label for="menuCategory" class="form-label">Category*</label>
+                                                <select class="form-control" id="menuCategory" name="category_id" required>
+                                                    <option value="">Select Category</option>
+                                                    <?php foreach ($menu_categories as $category): ?>
+                                                        <option value="<?php echo $category['id']; ?>">
+                                                            <?php echo htmlspecialchars($category['name']); ?>
+                                                        </option>
+                                                    <?php endforeach; ?>
+                                                </select>
+                                                <div class="invalid-feedback">Please select a category</div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label for="menuPrice" class="form-label">Price*</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text">ETB</span>
+                                                    <input type="number" class="form-control" id="menuPrice" name="price" 
+                                                           step="0.01" min="0" required>
                                                     <div class="invalid-feedback">Please enter a valid price</div>
                                                 </div>
                                             </div>
@@ -418,17 +426,78 @@ $about_features = getAboutFeatures();
                             <!-- Right Section: Menu Preview -->
                             <div class="col-md-8">
                                 <div class="card">
-                                    <div class="card-header bg-light">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h5 class="card-title mb-0">
-                                                <i class="bi bi-menu-button-wide me-2"></i>Menu Items
-                                            </h5>
-                                            <span id="menuCount" class="badge bg-primary">0 items</span>
-                                        </div>
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">Menu Items</h5>
+                                        <span class="badge bg-primary" id="menuCount">0 items</span>
                                     </div>
                                     <div class="card-body">
-                                        <div id="menuItemsContainer" class="row g-3">
-                                            <!-- Menu items will be loaded here -->
+                                        <div id="menuItemsContainer" class="row g-4">
+                                            <?php
+                                            // Get menu items from database
+                                            $query = "
+                                                SELECT m.*, c.name as category_name 
+                                                FROM menu_items m
+                                                LEFT JOIN menu_categories c ON m.category_id = c.id
+                                                WHERE m.active = 1
+                                                ORDER BY m.sort_order ASC, m.category_id ASC, m.name ASC
+                                            ";
+                                            
+                                            $result = mysqli_query($connect, $query);
+                                            
+                                            if ($result && mysqli_num_rows($result) > 0) {
+                                                $current_category = null;
+                                                while ($item = mysqli_fetch_assoc($result)) {
+                                                    if ($current_category !== $item['category_id']) {
+                                                        $current_category = $item['category_id'];
+                                                        echo '<div class="col-12 mb-3">';
+                                                        echo '<h5 class="border-bottom pb-2">' . htmlspecialchars($item['category_name']) . '</h5>';
+                                                        echo '</div>';
+                                                    }
+                                                    ?>
+                                                    <div class="col-md-6 col-lg-4 mb-4">
+                                                        <div class="card h-100 menu-item">
+                                                            <div class="card-img-container position-relative">
+                                                                <?php if (!empty($item['image']) && file_exists("../uploads/menu/" . $item['image'])): ?>
+                                                                    <img src="../uploads/menu/<?php echo htmlspecialchars($item['image']); ?>" 
+                                                                         class="card-img-top" 
+                                                                         alt="<?php echo htmlspecialchars($item['name']); ?>"
+                                                                         style="height: 200px; object-fit: cover;">
+                                                                <?php else: ?>
+                                                                    <div class="no-image-placeholder" style="height: 200px;">
+                                                                        <i class="bi bi-image text-muted"></i>
+                                                                    </div>
+                                                                <?php endif; ?>
+                                                                <div class="action-buttons position-absolute top-0 end-0 m-2">
+                                                                    <button class="btn btn-sm btn-light me-1" onclick="editMenuItem(<?php echo $item['id']; ?>)">
+                                                                        <i class="bi bi-pencil"></i>
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-danger" onclick="deleteMenuItem(<?php echo $item['id']; ?>)">
+                                                                        <i class="bi bi-trash"></i>
+                                                                    </button>
+                                                                </div>
+                                                                <span class="badge bg-primary position-absolute bottom-0 start-0 m-2">
+                                                                    ETB <?php echo number_format($item['price'], 2); ?>
+                                                                </span>
+                                                            </div>
+                                                            <div class="card-body">
+                                                                <h5 class="card-title"><?php echo htmlspecialchars($item['name']); ?></h5>
+                                                                <p class="card-text small text-muted"><?php echo htmlspecialchars($item['description'] ?? ''); ?></p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <?php
+                                                }
+                                            } else {
+                                                ?>
+                                                <div class="col-12 text-center py-5">
+                                                    <div class="text-muted">
+                                                        <i class="bi bi-menu-button-wide display-1"></i>
+                                                        <p class="mt-3">No menu items found. Add some items to get started!</p>
+                                                    </div>
+                                                </div>
+                                                <?php
+                                            }
+                                            ?>
                                         </div>
                                     </div>
                                 </div>
@@ -1229,6 +1298,8 @@ $about_features = getAboutFeatures();
                 return;
             }
 
+            console.log('Loading menu items...');
+            
             container.innerHTML = `
                 <div class="col-12 text-center py-5">
                     <div class="spinner-border text-primary" role="status">
@@ -1239,12 +1310,16 @@ $about_features = getAboutFeatures();
 
             fetch('get_menu_items.php')
                 .then(response => {
-                    if (!response.ok) throw new Error('Network response was not ok');
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
                     return response.json();
                 })
                 .then(data => {
+                    console.log('Menu data received:', data);
+                    
                     if (data.success) {
-                        if (!data.data || data.data.length === 0) {
+                        if (!data.data.categories || data.data.categories.length === 0) {
                             container.innerHTML = `
                                 <div class="col-12 text-center py-5">
                                     <div class="text-muted">
@@ -1257,50 +1332,61 @@ $about_features = getAboutFeatures();
                             return;
                         }
 
-                        container.innerHTML = data.data.map(item => `
-                            <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card h-100 menu-item">
-                                    <div class="card-img-container position-relative">
-                                        ${item.image ? `
-                                            <img src="../uploads/menu/${item.image}" 
-                                                 class="card-img-top" 
-                                                 alt="${item.name}"
-                                                 style="height: 200px; object-fit: cover;">
-                                        ` : `
-                                            <div class="no-image-placeholder" style="height: 200px;">
-                                                <i class="bi bi-image text-muted"></i>
-                                            </div>
-                                        `}
-                                        <div class="action-buttons position-absolute top-0 end-0 m-2">
-                                            <button class="btn btn-sm btn-light me-1" onclick="editMenuItem(${item.id})">
-                                                <i class="bi bi-pencil"></i>
-                                            </button>
-                                            <button class="btn btn-sm btn-danger" onclick="deleteMenuItem(${item.id})">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                        <span class="badge bg-primary position-absolute bottom-0 start-0 m-2">
-                                            ETB ${parseFloat(item.price).toFixed(2)}
-                                        </span>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h5 class="card-title mb-0">${item.name}</h5>
-                                            <span class="badge bg-secondary">${item.category_name}</span>
-                                        </div>
-                                        <p class="card-text small text-muted">${item.description || ''}</p>
-                                    </div>
+                        let html = '';
+                        data.data.categories.forEach(category => {
+                            // Add category header
+                            html += `
+                                <div class="col-12 mb-3">
+                                    <h5 class="border-bottom pb-2">${category.category_name}</h5>
                                 </div>
-                            </div>
-                        `).join('');
-
-                        countBadge.textContent = `${data.data.length} item${data.data.length !== 1 ? 's' : ''}`;
+                            `;
+                            
+                            // Add items in that category
+                            category.items.forEach(item => {
+                                html += `
+                                    <div class="col-md-6 col-lg-4 mb-4">
+                                        <div class="card h-100 menu-item">
+                                            <div class="card-img-container position-relative">
+                                                ${item.image ? `
+                                                    <img src="../uploads/menu/${item.image}" 
+                                                         class="card-img-top" 
+                                                         alt="${item.name}"
+                                                         style="height: 200px; object-fit: cover;">
+                                                ` : `
+                                                    <div class="no-image-placeholder" style="height: 200px;">
+                                                        <i class="bi bi-image text-muted"></i>
+                                                    </div>
+                                                `}
+                                                <div class="action-buttons position-absolute top-0 end-0 m-2">
+                                                    <button class="btn btn-sm btn-light me-1" onclick="editMenuItem(${item.id})">
+                                                        <i class="bi bi-pencil"></i>
+                                                    </button>
+                                                    <button class="btn btn-sm btn-danger" onclick="deleteMenuItem(${item.id})">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </div>
+                                                <span class="badge bg-primary position-absolute bottom-0 start-0 m-2">
+                                                    ETB ${parseFloat(item.price).toFixed(2)}
+                                                </span>
+                                            </div>
+                                            <div class="card-body">
+                                                <h5 class="card-title">${item.name}</h5>
+                                                <p class="card-text small text-muted">${item.description || ''}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            });
+                        });
+                        
+                        container.innerHTML = html;
+                        countBadge.textContent = `${data.data.total_items} item${data.data.total_items !== 1 ? 's' : ''}`;
                     } else {
                         throw new Error(data.message || 'Failed to load menu items');
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('Error loading menu items:', error);
                     container.innerHTML = `
                         <div class="col-12">
                             <div class="alert alert-danger">
@@ -1311,25 +1397,178 @@ $about_features = getAboutFeatures();
                 });
         }
 
-        // Initialize menu management when the page loads
+        // Make sure to initialize the menu when the tab is shown
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize menu if we're on the menu tab
             if (document.querySelector('#menu.active')) {
                 initializeMenuForm();
                 loadMenuItems();
             }
 
-            // Add tab change event listener
+            // Add tab change event listeners
             const tabEls = document.querySelectorAll('button[data-bs-toggle="tab"]');
             tabEls.forEach(tabEl => {
                 tabEl.addEventListener('shown.bs.tab', function (event) {
-                    const targetId = event.target.getAttribute('data-bs-target');
-                    if (targetId === '#menu') {
+                    if (event.target.getAttribute('data-bs-target') === '#menu') {
                         initializeMenuForm();
                         loadMenuItems();
                     }
                 });
             });
         });
+
+        // Add this JavaScript function for hero form handling
+        function initializeHeroForm() {
+            const form = document.getElementById('heroForm');
+            if (!form) return;
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+                submitBtn.disabled = true;
+
+                const formData = new FormData(this);
+
+                fetch('handlers/hero_handler.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showPopupMessage('Hero section updated successfully!', 'success');
+                        
+                        // Update preview
+                        if (formData.get('heading')) {
+                            document.getElementById('headingPreview').textContent = formData.get('heading');
+                        }
+                        if (formData.get('subheading')) {
+                            document.getElementById('subheadingPreview').textContent = formData.get('subheading');
+                        }
+
+                        // Handle image preview
+                        const imageFile = formData.get('hero_image');
+                        if (imageFile && imageFile.size > 0) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const preview = document.getElementById('imagePreview');
+                                preview.innerHTML = `<img src="${e.target.result}" alt="Hero preview" class="img-fluid">`;
+                            };
+                            reader.readAsDataURL(imageFile);
+                        }
+
+                        // Handle video preview
+                        const videoFile = formData.get('hero_video');
+                        if (videoFile && videoFile.size > 0) {
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                const preview = document.getElementById('videoPreview');
+                                preview.innerHTML = `
+                                    <video width="100%" controls>
+                                        <source src="${e.target.result}" type="${videoFile.type}">
+                                        Your browser does not support the video tag.
+                                    </video>
+                                `;
+                            };
+                            reader.readAsDataURL(videoFile);
+                        }
+                    } else {
+                        throw new Error(data.message || 'Failed to update hero section');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showPopupMessage(error.message || 'An unexpected error occurred', 'danger');
+                })
+                .finally(() => {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                });
+            });
+
+            // Add preview functionality for image and video uploads
+            const imageInput = document.getElementById('hero_image');
+            if (imageInput) {
+                imageInput.addEventListener('change', function() {
+                    const preview = document.getElementById('imagePreview');
+                    if (this.files && this.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            preview.innerHTML = `<img src="${e.target.result}" alt="Hero preview" class="img-fluid">`;
+                        };
+                        reader.readAsDataURL(this.files[0]);
+                    }
+                });
+            }
+
+            const videoInput = document.getElementById('hero_video');
+            if (videoInput) {
+                videoInput.addEventListener('change', function() {
+                    const preview = document.getElementById('videoPreview');
+                    if (this.files && this.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            preview.innerHTML = `
+                                <video width="100%" controls>
+                                    <source src="${e.target.result}" type="${this.files[0].type}">
+                                    Your browser does not support the video tag.
+                                </video>
+                            `;
+                        }.bind(this);
+                        reader.readAsDataURL(this.files[0]);
+                    }
+                });
+            }
+        }
+
+        // Initialize hero form when the page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeHeroForm();
+        });
+
+        function deleteMenuItem(id) {
+            if (!confirm('Are you sure you want to delete this menu item?')) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('action', 'delete');
+            formData.append('id', id);
+
+            fetch('handlers/menu_handler.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showPopupMessage('Menu item deleted successfully!', 'success');
+                    loadMenuItems(); // Reload the menu items
+                } else {
+                    throw new Error(data.message || 'Failed to delete menu item');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showPopupMessage(error.message || 'An unexpected error occurred', 'danger');
+            });
+        }
+
+        function editMenuItem(id) {
+            // Implement edit functionality
+            console.log('Edit menu item:', id);
+            // You can implement this later
+        }
+
+        function clearMenuImage() {
+            const input = document.getElementById('menuImage');
+            const preview = document.getElementById('menuImagePreview');
+            if (input) input.value = '';
+            if (preview) preview.classList.add('d-none');
+        }
     </script>
 
     <!-- Add this before </body> -->
@@ -1462,6 +1701,7 @@ $about_features = getAboutFeatures();
                         <div class="mb-3">
                             <label for="menuCategory" class="form-label">Category*</label>
                             <select class="form-control" id="menuCategory" name="category_id" required>
+                                <option value="">Select Category</option>
                                 <?php foreach ($menu_categories as $category): ?>
                                     <option value="<?php echo $category['id']; ?>">
                                         <?php echo htmlspecialchars($category['name']); ?>

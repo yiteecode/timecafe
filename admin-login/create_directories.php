@@ -1,14 +1,13 @@
 <?php
-// Define upload directories
+// Create necessary directories if they don't exist
 $directories = [
-    '../uploads/hero',
-    '../uploads/menu',
+    '../uploads',
     '../uploads/gallery',
-    '../uploads/testimonials',
-    '../uploads/about'
+    '../uploads/menu',
+    '../uploads/chefs',
+    '../uploads/hero'
 ];
 
-// Create directories with proper permissions
 foreach ($directories as $dir) {
     if (!file_exists($dir)) {
         mkdir($dir, 0755, true);

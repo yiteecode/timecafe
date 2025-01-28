@@ -71,7 +71,7 @@ try {
 
 <body class="index-page">
 
-<header id="header" class="header d-flex align-items-center sticky-top">
+  <header id="header" class="header d-flex align-items-center sticky-top">
     <div class="container position-relative d-flex align-items-center justify-content-between">
 
       <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
@@ -126,7 +126,7 @@ try {
           <li data-lang="en">English</li>
           <li data-lang="am">አማርኛ</li>
         </ul>
-      </div>
+    </div>
   </header>
     
     

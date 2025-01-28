@@ -1,12 +1,20 @@
 <?php
 require_once 'db-config.php';
 
-// Get hero section content
-$stmt = $connect->prepare("SELECT * FROM hero_section WHERE id = 1");
-$stmt->execute();
-$result = $stmt->get_result(); // Get the result set
-$hero = $result->fetch_assoc(); // Now fetch the associative array
-$stmt->close();
+// Fetch hero section data
+$hero_query = "SELECT * FROM hero_section WHERE id = 1";
+$hero_result = mysqli_query($connect, $hero_query);
+$hero_data = mysqli_fetch_assoc($hero_result);
+
+// Set default values if no data exists
+if (!$hero_data) {
+    $hero_data = [
+        'heading' => 'Experience Authentic Ethiopian Coffee',
+        'subheading' => 'Discover the rich flavors of freshly brewed Habesha coffee and a variety of delicious dishes in the heart of Hawassa.',
+        'hero_image' => '',
+        'video_url' => ''
+    ];
+}
 ?>
 
 <!DOCTYPE html>
@@ -108,37 +116,35 @@ $stmt->close();
 
    <!-- Hero Section -->
 <section id="hero" class="hero section light-background">
-
-  <div class="container">
-    <div class="row gy-4 justify-content-center justify-content-lg-between">
-      <div class="col-lg-5 order-2 order-lg-1 d-flex flex-column justify-content-center">
-        <h1 data-aos="fade-up">
-          <?php echo htmlspecialchars($hero['heading'] ?? 'Experience Authentic Ethiopian Coffee'); ?>
-        </h1>
-        <p data-aos="fade-up" data-aos-delay="100">
-          <?php echo htmlspecialchars($hero['subheading'] ?? 'Discover the rich flavors of freshly brewed Habesha coffee and a variety of delicious dishes in the heart of Hawassa.'); ?>
-        </p>
-        <div class="d-flex" data-aos="fade-up" data-aos-delay="200">
-          <a href="#book-a-table" class="btn-get-started">Book a Table</a>
-          <?php if (!empty($hero['video_url'])): ?>
-            <a href="uploads/hero/<?php echo htmlspecialchars($hero['video_url']); ?>" 
-               class="glightbox btn-watch-video d-flex align-items-center">
-              <i class="bi bi-play-circle"></i><span>Watch Video</span>
-            </a>
-          <?php endif; ?>
+    <div class="container">
+        <div class="row gy-4 justify-content-center justify-content-lg-between">
+            <div class="col-lg-5 order-2 order-lg-1 d-flex flex-column justify-content-center">
+                <h1 data-aos="fade-up">
+                    <?php echo htmlspecialchars($hero_data['heading']); ?>
+                </h1>
+                <p data-aos="fade-up" data-aos-delay="100">
+                    <?php echo nl2br(htmlspecialchars($hero_data['subheading'])); ?>
+                </p>
+                <div class="d-flex" data-aos="fade-up" data-aos-delay="200">
+                    <a href="#book-a-table" class="btn-get-started">Book a Table</a>
+                    <?php if (!empty($hero_data['video_url'])): ?>
+                        <a href="./uploads/hero/<?php echo htmlspecialchars($hero_data['video_url']); ?>" 
+                           class="glightbox btn-watch-video d-flex align-items-center">
+                            <i class="bi bi-play-circle"></i><span>Watch Video</span>
+                        </a>
+                    <?php endif; ?>
+                </div>
+            </div>
+            <div class="col-lg-5 order-1 order-lg-2 hero-img" data-aos="zoom-out">
+                <?php if (!empty($hero_data['hero_image'])): ?>
+                    <img src="./uploads/hero/<?php echo htmlspecialchars($hero_data['hero_image']); ?>" 
+                         class="img-fluid animated" alt="Hero Image">
+                <?php else: ?>
+                    <img src="assets/img/timesandwich.png" class="img-fluid animated" alt="Default Hero Image">
+                <?php endif; ?>
+            </div>
         </div>
-      </div>
-      <div class="col-lg-5 order-1 order-lg-2 hero-img" data-aos="zoom-out">
-        <?php if (!empty($hero['hero_image'])): ?>
-          <img src="uploads/hero/<?php echo htmlspecialchars($hero['hero_image']); ?>" 
-               class="img-fluid animated" alt="Hero Image">
-        <?php else: ?>
-          <img src="assets/img/timesandwich.png" class="img-fluid animated" alt="Ethiopian Coffee">
-        <?php endif; ?>
-      </div>
     </div>
-  </div>
-
 </section>
 <!-- /Hero Section -->
 

@@ -529,44 +529,34 @@ $about_features = getAboutFeatures();
                                 <div class="card">
                                     <div class="card-header bg-primary text-white">
                                         <h5 class="card-title mb-0">
-                                            <i class="bi bi-image-fill me-2"></i>Add to Gallery
+                                            <i class="bi bi-plus-circle me-2"></i>Add to Gallery
                                         </h5>
                                     </div>
                                     <div class="card-body">
                                         <form id="galleryUploadForm" enctype="multipart/form-data" novalidate>
                                             <div class="mb-3">
                                                 <label for="galleryImage" class="form-label">Select Image*</label>
-                                                <div class="input-group">
-                                                    <input type="file" class="form-control" id="galleryImage" name="image" 
-                                                           accept="image/jpeg,image/png,image/webp" required>
-                                                    <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('galleryImage').value = ''">
-                                                        <i class="bi bi-x-circle"></i>
-                                                    </button>
-                                                </div>
+                                                <input type="file" class="form-control" id="galleryImage" name="image" 
+                                                       accept="image/jpeg,image/png,image/webp" required>
                                                 <div class="form-text">Accepted formats: JPG, PNG, WEBP (Max: 5MB)</div>
+                                                <div class="invalid-feedback">Please select an image</div>
                                             </div>
                                             
                                             <div id="imagePreviewContainer" class="mb-3 d-none">
-                                                <div class="position-relative">
-                                                    <img id="imagePreview" src="" alt="Preview" class="img-fluid rounded">
-                                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
-                                                            onclick="clearImagePreview()">
-                                                        <i class="bi bi-x"></i>
-                                                    </button>
-                                                </div>
+                                                <!-- Image preview will be shown here -->
                                             </div>
 
                                             <div class="mb-3">
-                                                <label for="imageTitle" class="form-label">Title*</label>
-                                                <input type="text" class="form-control" id="imageTitle" name="title" required
-                                                       minlength="3" maxlength="100">
+                                                <label for="galleryTitle" class="form-label">Title*</label>
+                                                <input type="text" class="form-control" id="galleryTitle" name="title" 
+                                                       required minlength="3" maxlength="100" autocomplete="off">
                                                 <div class="invalid-feedback">Please enter a title (3-100 characters)</div>
                                             </div>
-                                            
+
                                             <div class="mb-3">
-                                                <label for="imageDescription" class="form-label">Description</label>
-                                                <textarea class="form-control" id="imageDescription" name="description" 
-                                                          rows="3" maxlength="500"></textarea>
+                                                <label for="galleryDescription" class="form-label">Description</label>
+                                                <textarea class="form-control" id="galleryDescription" name="description" 
+                                                          rows="3" maxlength="500" autocomplete="off"></textarea>
                                                 <div class="form-text">Maximum 500 characters</div>
                                             </div>
 
@@ -583,22 +573,69 @@ $about_features = getAboutFeatures();
                             <!-- Right Section: Gallery Preview -->
                             <div class="col-md-8">
                                 <div class="card">
-                                    <div class="card-header bg-light">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <h5 class="card-title mb-0">
-                                                <i class="bi bi-images me-2"></i>Gallery Preview
-                                            </h5>
-                                            <span id="galleryCount" class="badge bg-primary">0 items</span>
-                                        </div>
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <h5 class="card-title mb-0">Gallery Preview</h5>
+                                        <?php
+                                        $count_query = "SELECT COUNT(*) as total FROM gallery WHERE active = 1";
+                                        $count_result = mysqli_query($connect, $count_query);
+                                        $count = mysqli_fetch_assoc($count_result)['total'];
+                                        ?>
+                                        <span class="badge bg-primary"><?php echo $count; ?> item<?php echo $count !== 1 ? 's' : ''; ?></span>
                                     </div>
                                     <div class="card-body">
-                                        <div id="galleryContainer" class="row g-3">
-                                            <!-- Gallery items will be loaded here -->
-                                            <div class="text-center py-5">
-                                                <div class="spinner-border text-primary" role="status">
-                                                    <span class="visually-hidden">Loading...</span>
+                                        <div class="row g-4">
+                                            <?php
+                                            $query = "SELECT * FROM gallery WHERE active = 1 ORDER BY created_at DESC";
+                                            $result = mysqli_query($connect, $query);
+                                            
+                                            if ($result && mysqli_num_rows($result) > 0) {
+                                                while ($item = mysqli_fetch_assoc($result)) {
+                                                    ?>
+                                                    <div class="col-md-6 col-lg-4 gallery-item">
+                                                        <div class="card h-100">
+                                                            <div class="position-relative">
+                                                                <img src="../uploads/gallery/<?php echo htmlspecialchars($item['image']); ?>" 
+                                                                     class="card-img-top" 
+                                                                     alt="<?php echo htmlspecialchars($item['title']); ?>"
+                                                                     style="height: 200px; object-fit: cover;">
+                                                                <div class="position-absolute top-0 end-0 m-2">
+                                                                    <button class="btn btn-sm btn-light me-1" 
+                                                                            onclick="viewGalleryImage('<?php echo htmlspecialchars($item['image']); ?>', 
+                                                                                                    '<?php echo htmlspecialchars($item['title']); ?>', 
+                                                                                                    '<?php echo htmlspecialchars($item['description']); ?>')">
+                                                                        <i class="bi bi-eye"></i>
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-light me-1" 
+                                                                            onclick="editGalleryItem(<?php echo $item['id']; ?>)">
+                                                                        <i class="bi bi-pencil"></i>
+                                                                    </button>
+                                                                    <button class="btn btn-sm btn-danger" 
+                                                                            onclick="deleteGalleryItem(<?php echo $item['id']; ?>)">
+                                                                        <i class="bi bi-trash"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                            <div class="card-body">
+                                                                <h5 class="card-title"><?php echo htmlspecialchars($item['title']); ?></h5>
+                                                                <?php if (!empty($item['description'])): ?>
+                                                                    <p class="card-text small text-muted"><?php echo htmlspecialchars($item['description']); ?></p>
+                                                                <?php endif; ?>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <?php
+                                                }
+                                            } else {
+                                                ?>
+                                                <div class="col-12 text-center py-5">
+                                                    <div class="text-muted">
+                                                        <i class="bi bi-images display-1"></i>
+                                                        <p class="mt-3">No gallery items found. Add some images to get started!</p>
+                                                    </div>
                                                 </div>
-                                            </div>
+                                                <?php
+                                            }
+                                            ?>
                                         </div>
                                     </div>
                                 </div>
@@ -844,7 +881,7 @@ $about_features = getAboutFeatures();
         document.addEventListener('DOMContentLoaded', function() {
             // Initialize gallery if we're on the gallery tab
             if (document.querySelector('#gallery.active')) {
-                initializeGalleryForm();
+                initializeGalleryManagement();
                 loadGalleryItems();
             }
 
@@ -859,7 +896,7 @@ $about_features = getAboutFeatures();
                 tabEl.addEventListener('shown.bs.tab', function (event) {
                     const targetId = event.target.getAttribute('data-bs-target');
                     if (targetId === '#gallery') {
-                        initializeGalleryForm();
+                        initializeGalleryManagement();
                         loadGalleryItems();
                     } else if (targetId === '#chefs') {
                         initializeChefs();
@@ -883,76 +920,102 @@ $about_features = getAboutFeatures();
             }, 3000);
         }
 
-        // Gallery Management Functions
-        function initializeGalleryForm() {
+        // Gallery functions
+        function initializeGalleryManagement() {
             const form = document.getElementById('galleryUploadForm');
             if (!form) return;
 
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                if (!this.checkValidity()) {
-                    e.stopPropagation();
-                    this.classList.add('was-validated');
-                    return;
+            // Handle image preview
+            const imageInput = document.getElementById('galleryImage');
+            imageInput.addEventListener('change', function() {
+                const preview = document.getElementById('imagePreviewContainer');
+                if (this.files && this.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        preview.innerHTML = `
+                            <div class="position-relative">
+                                <img src="${e.target.result}" class="img-fluid rounded" alt="Preview">
+                                <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-2" 
+                                        onclick="clearGalleryPreview()">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        `;
+                        preview.classList.remove('d-none');
+                    };
+                    reader.readAsDataURL(this.files[0]);
                 }
-                uploadGalleryItem(this);
             });
 
-            // Image preview functionality
-            const imageInput = document.getElementById('galleryImage');
-            if (imageInput) {
-                imageInput.addEventListener('change', function() {
-                    const preview = document.getElementById('imagePreviewContainer');
-                    const previewImg = document.getElementById('imagePreview');
-                    handleImagePreview(this, preview, previewImg);
+            // Handle form submission
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const formData = new FormData(this);
+                formData.append('action', 'add');
+
+                const submitBtn = this.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass"></i> Uploading...';
+
+                fetch('handlers/gallery_handler.php', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showPopupMessage('Gallery item added successfully', 'success');
+                        this.reset();
+                        clearGalleryPreview();
+                        location.reload();
+                    } else {
+                        throw new Error(data.message || 'Failed to add gallery item');
+                    }
+                })
+                .catch(error => {
+                    showPopupMessage(error.message, 'danger');
+                })
+                .finally(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-cloud-upload"></i> Upload';
                 });
-            }
+            });
         }
 
-        function handleImagePreview(input, previewContainer, previewImg) {
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
-                const maxSize = 5 * 1024 * 1024; // 5MB
-                const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+        function editGalleryItem(id) {
+            fetch(`handlers/gallery_handler.php?id=${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        const modal = new bootstrap.Modal(document.getElementById('editGalleryModal'));
+                        const item = data.data;
 
-                if (file.size > maxSize) {
-                    showPopupMessage('Image size must be less than 5MB', 'danger');
-                    input.value = '';
-                    return;
-                }
+                        document.getElementById('editGalleryId').value = item.id;
+                        document.getElementById('editGalleryTitle').value = item.title;
+                        document.getElementById('editGalleryDescription').value = item.description || '';
+                        document.getElementById('editGalleryOldImage').value = item.image;
 
-                if (!allowedTypes.includes(file.type)) {
-                    showPopupMessage('Invalid file type. Please use JPG, PNG, or WEBP', 'danger');
-                    input.value = '';
-                    return;
-                }
+                        const preview = document.getElementById('editGalleryImagePreview');
+                        if (item.image) {
+                            preview.innerHTML = `<img src="../uploads/gallery/${item.image}" class="img-fluid rounded" alt="Current image">`;
+                        }
 
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    previewImg.src = e.target.result;
-                    previewContainer.classList.remove('d-none');
-                };
-                reader.readAsDataURL(file);
-            } else {
-                previewContainer.classList.add('d-none');
-            }
+                        modal.show();
+                    }
+                })
+                .catch(error => {
+                    showPopupMessage('Failed to load gallery item', 'danger');
+                });
         }
 
-        function clearImagePreview() {
-            const input = document.getElementById('galleryImage');
-            const preview = document.getElementById('imagePreviewContainer');
-            if (input) input.value = '';
-            if (preview) preview.classList.add('d-none');
-        }
-
-        function uploadGalleryItem(form) {
+        function saveGalleryEdit() {
+            const form = document.getElementById('editGalleryForm');
             const formData = new FormData(form);
-            formData.append('gallery_action', 'upload');
-            
-            const submitBtn = form.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Uploading...';
+            formData.append('action', 'edit');
+
+            const submitBtn = document.querySelector('#editGalleryModal .btn-primary');
             submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass"></i> Saving...';
 
             fetch('handlers/gallery_handler.php', {
                 method: 'POST',
@@ -961,95 +1024,27 @@ $about_features = getAboutFeatures();
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showPopupMessage('Image uploaded successfully!', 'success');
-                    form.reset();
-                    clearImagePreview();
-                    loadGalleryItems();
+                    showPopupMessage('Gallery item updated successfully', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('editGalleryModal')).hide();
+                    location.reload();
                 } else {
-                    throw new Error(data.message || 'Failed to upload image');
+                    throw new Error(data.message || 'Failed to update gallery item');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showPopupMessage(error.message || 'An unexpected error occurred', 'danger');
+                showPopupMessage(error.message, 'danger');
             })
             .finally(() => {
-                submitBtn.innerHTML = originalText;
                 submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Save Changes';
             });
         }
 
-        function loadGalleryItems() {
-            const container = document.getElementById('galleryContainer');
-            const countBadge = document.getElementById('galleryCount');
-            
-            if (!container) return;
-
-            container.innerHTML = `
-                <div class="col-12 text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            `;
-
-            fetch('get_gallery_items.php')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        if (data.data.length === 0) {
-                            container.innerHTML = `
-                                <div class="col-12 text-center py-5">
-                                    <div class="text-muted">
-                                        <i class="bi bi-images display-1"></i>
-                                        <p class="mt-3">No images in gallery. Add some images to get started!</p>
-                                    </div>
-                                </div>
-                            `;
-                            countBadge.textContent = '0 items';
-                            return;
-                        }
-
-                        container.innerHTML = data.data.map(item => `
-                            <div class="col-md-6 col-lg-4 gallery-item">
-                                <div class="card h-100">
-                                    <div class="card-img-container position-relative">
-                                        <img src="../uploads/gallery/${item.image}" 
-                                             class="card-img-top" 
-                                             alt="${item.title}"
-                                             style="height: 200px; object-fit: cover;">
-                                        <div class="position-absolute top-0 end-0 m-2">
-                                            <button class="btn btn-sm btn-danger" onclick="deleteGalleryItem(${item.id})">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <h5 class="card-title">${item.title}</h5>
-                                        <p class="card-text small text-muted">${item.description || ''}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('');
-
-                        countBadge.textContent = `${data.data.length} item${data.data.length !== 1 ? 's' : ''}`;
-                    } else {
-                        showPopupMessage(data.message || 'Failed to load gallery items', 'danger');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    showPopupMessage('Failed to load gallery items', 'danger');
-                });
-        }
-
         function deleteGalleryItem(id) {
-            if (!confirm('Are you sure you want to delete this image?')) {
-                return;
-            }
+            if (!confirm('Are you sure you want to delete this item?')) return;
 
             const formData = new FormData();
-            formData.append('gallery_action', 'delete');
+            formData.append('action', 'delete');
             formData.append('id', id);
 
             fetch('handlers/gallery_handler.php', {
@@ -1059,33 +1054,21 @@ $about_features = getAboutFeatures();
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showPopupMessage('Image deleted successfully!', 'success');
-                    loadGalleryItems();
+                    showPopupMessage('Gallery item deleted successfully', 'success');
+                    location.reload();
                 } else {
-                    showPopupMessage(data.message || 'Failed to delete image', 'danger');
+                    throw new Error(data.message || 'Failed to delete gallery item');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                showPopupMessage('An unexpected error occurred', 'danger');
+                showPopupMessage(error.message, 'danger');
             });
         }
 
-        function toggleGalleryView(view) {
-            const container = document.getElementById('galleryContainer');
-            const listBtn = document.getElementById('listViewBtn');
-            const gridBtn = document.getElementById('gridViewBtn');
-            
-            if (view === 'list') {
-                container.classList.add('list-view');
-                listBtn.classList.add('active');
-                gridBtn.classList.remove('active');
-            } else {
-                container.classList.remove('list-view');
-                gridBtn.classList.add('active');
-                listBtn.classList.remove('active');
-            }
-        }
+        // Initialize when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeGalleryManagement();
+        });
 
         // Chefs Management Functions
         function initializeChefs() {
@@ -1228,10 +1211,28 @@ $about_features = getAboutFeatures();
         function initializeMenuForm() {
             const form = document.getElementById('menuUploadForm');
             if (!form) {
-                console.error('Menu form not found');
+                console.error('Menu upload form not found');
                 return;
             }
 
+            // Handle image preview
+            const imageInput = document.getElementById('menuImage');
+            const imagePreview = document.getElementById('menuImagePreview');
+            
+            if (imageInput) {
+                imageInput.addEventListener('change', function() {
+                    if (this.files && this.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            imagePreview.innerHTML = `<img src="${e.target.result}" alt="Preview" class="img-fluid rounded">`;
+                            imagePreview.classList.remove('d-none');
+                        };
+                        reader.readAsDataURL(this.files[0]);
+                    }
+                });
+            }
+
+            // Handle form submission
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
                 
@@ -1241,13 +1242,13 @@ $about_features = getAboutFeatures();
                     return;
                 }
 
-                const formData = new FormData(this);
-                formData.append('action', 'add');
-
                 const submitBtn = this.querySelector('button[type="submit"]');
                 const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Adding...';
                 submitBtn.disabled = true;
+
+                const formData = new FormData(this);
+                formData.append('action', 'add');
 
                 fetch('handlers/menu_handler.php', {
                     method: 'POST',
@@ -1260,9 +1261,15 @@ $about_features = getAboutFeatures();
                 .then(data => {
                     if (data.success) {
                         showPopupMessage('Menu item added successfully!', 'success');
+                        
+                        // Reset form and preview
                         this.reset();
-                        clearMenuImage();
-                        loadMenuItems();
+                        imagePreview.classList.add('d-none');
+                        imagePreview.innerHTML = '';
+                        this.classList.remove('was-validated');
+
+                        // Reload menu items without page refresh
+                        location.reload();
                     } else {
                         throw new Error(data.message || 'Failed to add menu item');
                     }
@@ -1272,22 +1279,11 @@ $about_features = getAboutFeatures();
                     showPopupMessage(error.message || 'An unexpected error occurred', 'danger');
                 })
                 .finally(() => {
-                    submitBtn.innerHTML = originalText;
                     submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
                 });
             });
-
-            // Image preview functionality
-            const imageInput = document.getElementById('menuImage');
-            if (imageInput) {
-                imageInput.addEventListener('change', function() {
-                    const preview = document.getElementById('menuImagePreview');
-                    if (preview) {
-                        handleImagePreview(this, preview.parentElement, preview);
-                    }
-                });
-            }
-        }
+        });
 
         function loadMenuItems() {
             const container = document.getElementById('menuItemsContainer');
@@ -1298,27 +1294,14 @@ $about_features = getAboutFeatures();
                 return;
             }
 
-            console.log('Loading menu items...');
-            
-            container.innerHTML = `
-                <div class="col-12 text-center py-5">
-                    <div class="spinner-border text-primary" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                </div>
-            `;
-
             fetch('get_menu_items.php')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    console.log('Menu data received:', data);
-                    
                     if (data.success) {
+                        // Update the count badge
+                        const totalItems = data.data.total_items || 0;
+                        countBadge.textContent = `${totalItems} item${totalItems !== 1 ? 's' : ''}`;
+
                         if (!data.data.categories || data.data.categories.length === 0) {
                             container.innerHTML = `
                                 <div class="col-12 text-center py-5">
@@ -1328,20 +1311,17 @@ $about_features = getAboutFeatures();
                                     </div>
                                 </div>
                             `;
-                            countBadge.textContent = '0 items';
                             return;
                         }
 
                         let html = '';
                         data.data.categories.forEach(category => {
-                            // Add category header
                             html += `
                                 <div class="col-12 mb-3">
                                     <h5 class="border-bottom pb-2">${category.category_name}</h5>
                                 </div>
                             `;
                             
-                            // Add items in that category
                             category.items.forEach(item => {
                                 html += `
                                     <div class="col-md-6 col-lg-4 mb-4">
@@ -1380,28 +1360,20 @@ $about_features = getAboutFeatures();
                         });
                         
                         container.innerHTML = html;
-                        countBadge.textContent = `${data.data.total_items} item${data.data.total_items !== 1 ? 's' : ''}`;
-                    } else {
-                        throw new Error(data.message || 'Failed to load menu items');
                     }
                 })
                 .catch(error => {
                     console.error('Error loading menu items:', error);
-                    container.innerHTML = `
-                        <div class="col-12">
-                            <div class="alert alert-danger">
-                                <i class="bi bi-exclamation-triangle me-2"></i>${error.message || 'Failed to load menu items'}
-                            </div>
-                        </div>
-                    `;
+                    showPopupMessage('Failed to load menu items', 'danger');
                 });
         }
 
-        // Make sure to initialize the menu when the tab is shown
+        // Make sure to initialize the form when the page loads
         document.addEventListener('DOMContentLoaded', function() {
+            initializeMenuForm();
+            
             // Initialize menu if we're on the menu tab
             if (document.querySelector('#menu.active')) {
-                initializeMenuForm();
                 loadMenuItems();
             }
 
@@ -1410,7 +1382,6 @@ $about_features = getAboutFeatures();
             tabEls.forEach(tabEl => {
                 tabEl.addEventListener('shown.bs.tab', function (event) {
                     if (event.target.getAttribute('data-bs-target') === '#menu') {
-                        initializeMenuForm();
                         loadMenuItems();
                     }
                 });
@@ -1484,8 +1455,8 @@ $about_features = getAboutFeatures();
                     showPopupMessage(error.message || 'An unexpected error occurred', 'danger');
                 })
                 .finally(() => {
-                    submitBtn.innerHTML = originalText;
                     submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
                 });
             });
 
@@ -1558,9 +1529,82 @@ $about_features = getAboutFeatures();
         }
 
         function editMenuItem(id) {
-            // Implement edit functionality
-            console.log('Edit menu item:', id);
-            // You can implement this later
+            // Fetch menu item data
+            fetch(`handlers/menu_handler.php?action=get&id=${id}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const item = data.data;
+                        
+                        // Populate the edit form
+                        document.getElementById('editMenuId').value = item.id;
+                        document.getElementById('editMenuName').value = item.name;
+                        document.getElementById('editMenuCategory').value = item.category_id;
+                        document.getElementById('editMenuPrice').value = item.price;
+                        document.getElementById('editMenuDescription').value = item.description || '';
+                        document.getElementById('editMenuOldImage').value = item.image || '';
+
+                        // Show current image if exists
+                        const imagePreview = document.getElementById('editMenuImagePreview');
+                        if (item.image) {
+                            imagePreview.innerHTML = `
+                                <img src="../uploads/menu/${item.image}" 
+                                     alt="Current image" 
+                                     class="img-fluid rounded mb-2">
+                            `;
+                        } else {
+                            imagePreview.innerHTML = '';
+                        }
+
+                        // Show the modal
+                        const modal = new bootstrap.Modal(document.getElementById('editMenuModal'));
+                        modal.show();
+                    } else {
+                        showPopupMessage('Failed to load menu item details', 'danger');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    showPopupMessage('Failed to load menu item details', 'danger');
+                });
+        }
+
+        function saveMenuEdit() {
+            const form = document.getElementById('editMenuForm');
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                return;
+            }
+
+            const submitBtn = document.querySelector('#editMenuModal .btn-primary');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Saving...';
+
+            const formData = new FormData(form);
+
+            fetch('handlers/menu_handler.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showPopupMessage('Menu item updated successfully!', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('editMenuModal')).hide();
+                    location.reload(); // Reload to show updated item
+                } else {
+                    throw new Error(data.message || 'Failed to update menu item');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showPopupMessage(error.message || 'An unexpected error occurred', 'danger');
+            })
+            .finally(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
         }
 
         function clearMenuImage() {
@@ -1722,6 +1766,115 @@ $about_features = getAboutFeatures();
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-primary" onclick="saveMenuItem()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Menu Edit Modal -->
+    <div class="modal fade" id="editMenuModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Menu Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editMenuForm" enctype="multipart/form-data">
+                        <input type="hidden" name="id" id="editMenuId">
+                        <input type="hidden" name="action" value="edit">
+                        <input type="hidden" name="old_image" id="editMenuOldImage">
+                        
+                        <div class="mb-3">
+                            <label for="editMenuImage" class="form-label">Item Image</label>
+                            <input type="file" class="form-control" id="editMenuImage" name="image" accept="image/jpeg,image/png,image/webp">
+                            <div class="form-text">Leave empty to keep current image</div>
+                        </div>
+                        
+                        <div id="editMenuImagePreview" class="mb-3">
+                            <!-- Current image will be shown here -->
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editMenuName" class="form-label">Item Name*</label>
+                            <input type="text" class="form-control" id="editMenuName" name="name" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editMenuCategory" class="form-label">Category*</label>
+                            <select class="form-control" id="editMenuCategory" name="category_id" required>
+                                <?php foreach ($menu_categories as $category): ?>
+                                    <option value="<?php echo $category['id']; ?>">
+                                        <?php echo htmlspecialchars($category['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editMenuPrice" class="form-label">Price*</label>
+                            <div class="input-group">
+                                <span class="input-group-text">ETB</span>
+                                <input type="number" class="form-control" id="editMenuPrice" name="price" 
+                                       step="0.01" min="0" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editMenuDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="editMenuDescription" name="description" rows="3"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveMenuEdit()">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gallery Edit Modal -->
+    <div class="modal fade" id="editGalleryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Edit Gallery Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editGalleryForm" enctype="multipart/form-data">
+                        <input type="hidden" name="id" id="editGalleryId">
+                        <input type="hidden" name="action" value="edit">
+                        <input type="hidden" name="old_image" id="editGalleryOldImage">
+                        
+                        <div class="mb-3">
+                            <label for="editGalleryImage" class="form-label">Image</label>
+                            <input type="file" class="form-control" id="editGalleryImage" name="image" 
+                                   accept="image/jpeg,image/png,image/webp">
+                            <div class="form-text">Leave empty to keep current image</div>
+                        </div>
+                        
+                        <div id="editGalleryImagePreview" class="mb-3">
+                            <!-- Current image will be shown here -->
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editGalleryTitle" class="form-label">Title*</label>
+                            <input type="text" class="form-control" id="editGalleryTitle" name="title" 
+                                   required minlength="3" maxlength="100">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="editGalleryDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="editGalleryDescription" name="description" 
+                                      rows="3" maxlength="500"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveGalleryEdit()">Save Changes</button>
                 </div>
             </div>
         </div>

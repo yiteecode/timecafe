@@ -637,3 +637,165 @@ button:disabled {
     height: 100%;
     object-fit: cover;
 }
+
+/* Admin Layout */
+body {
+    background-color: #f8f9fa;
+    display: flex;
+    min-height: 100vh;
+    margin: 0;
+    font-family: var(--default-font);
+}
+
+/* Sidebar Styles */
+#sidebar {
+    width: 260px;
+    min-height: 100vh;
+    background: #2c3e50;
+    color: #fff;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 1000;
+    padding: 20px 0;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+}
+
+#sidebar .sidebar-header {
+    padding: 0 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+#sidebar .nav-link {
+    padding: 12px 20px;
+    color: rgba(255,255,255,0.8) !important;
+    transition: all 0.3s;
+}
+
+#sidebar .nav-link:hover {
+    background: rgba(255,255,255,0.1);
+    color: #fff !important;
+}
+
+#sidebar .nav-link.active {
+    background: rgba(255,255,255,0.2);
+    color: #fff !important;
+}
+
+#sidebar .bi {
+    font-size: 1.1rem;
+}
+
+/* Main Content Area */
+.content {
+    flex: 1;
+    margin-left: 260px;
+    padding: 30px;
+    width: calc(100% - 260px);
+    background-color: #f8f9fa;
+}
+
+/* About Section Specific Styles */
+.about-section {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.05);
+    padding: 25px;
+    margin-bottom: 30px;
+}
+
+.about-section h4 {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.about-features {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.05);
+    padding: 25px;
+}
+
+.feature-item {
+    background: #fff;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+}
+
+.feature-item:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    transform: translateY(-2px);
+}
+
+.feature-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.feature-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Form Controls */
+.form-control {
+    border: 1px solid #e9ecef;
+    padding: 0.6rem 1rem;
+}
+
+.form-control:focus {
+    border-color: #2c3e50;
+    box-shadow: 0 0 0 0.2rem rgba(44, 62, 80, 0.15);
+}
+
+.form-label {
+    font-weight: 500;
+    color: #2c3e50;
+}
+
+/* Buttons */
+.btn-primary {
+    background-color: #2c3e50;
+    border-color: #2c3e50;
+}
+
+.btn-primary:hover {
+    background-color: #34495e;
+    border-color: #34495e;
+}
+
+.btn-add-feature {
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    #sidebar {
+        width: 200px;
+    }
+    
+    .content {
+        margin-left: 200px;
+        width: calc(100% - 200px);
+        padding: 20px;
+    }
+}
+
+@media (max-width: 576px) {
+    #sidebar {
+        width: 100%;
+        position: relative;
+        min-height: auto;
+    }
+    
+    .content {
+        margin-left: 0;
+        width: 100%;
+    }
+}

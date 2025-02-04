@@ -15,7 +15,21 @@ if (!$hero_data) {
         'video_url' => ''
     ];
 }
+
+
+// Get current logo
+$logoStmt = $connect->prepare("SELECT setting_value FROM settings WHERE setting_key = 'brand_logo'");
+$logoStmt->execute();
+$logoResult = $logoStmt->get_result();
+$currentLogo = $logoResult->fetch_assoc()['setting_value'] ?? 'time-logo.png';
+
+// Add cache-busting parameter
+$logoUrl = 'assets/img/' . htmlspecialchars($currentLogo) . '?v=' . time();
+
+
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -28,8 +42,8 @@ if (!$hero_data) {
   <meta name="keywords" content="">
 
   <!-- Favicons -->
-  <link href="assets/img/time-logo.png" rel="icon">
-  <link href="assets/img/time-logo.png" rel="apple-touch-icon">
+  <link href="<?php echo $logoUrl; ?>" rel="icon">
+  <link href="<?php echo $logoUrl; ?>" rel="apple-touch-icon">
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -57,7 +71,7 @@ if (!$hero_data) {
 
       <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
         
-        <img src="assets/img/time-logo.png" alt="time logo">
+        <img src="<?php echo $logoUrl; ?>" alt="time logo">
         <h1 class="sitename">Time Cafe</h1>
         <span>.</span>
       </a>

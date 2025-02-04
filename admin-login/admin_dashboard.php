@@ -3,10 +3,11 @@ session_start();
 require_once '../db-config.php';
 require_once 'includes/auth_check.php';
 
+
 // Get counts for dashboard stats
 $stats = [
-    'menu_items' => mysqli_fetch_assoc(mysqli_query($connect, "SELECT COUNT(*) as count FROM menu_items"))['count'] ?? 0,
-    'gallery_items' => mysqli_fetch_assoc(mysqli_query($connect, "SELECT COUNT(*) as count FROM gallery"))['count'] ?? 0,
+    'orders' => mysqli_fetch_assoc(mysqli_query($connect, "SELECT COUNT(*) as count FROM orders"))['count'] ?? 0,
+    'messages' => mysqli_fetch_assoc(mysqli_query($connect, "SELECT COUNT(*) as count FROM contact_messages"))['count'] ?? 0,
     'chefs' => mysqli_fetch_assoc(mysqli_query($connect, "SELECT COUNT(*) as count FROM chefs"))['count'] ?? 0
 ];
 
@@ -31,7 +32,7 @@ include 'includes/header.php';
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <h1>Welcome back, <?php echo htmlspecialchars($_SESSION['admin_username']); ?>!</h1>
-                        <p class="text-muted">Here's what's happening with your cafe today.</p>
+                        <p class="col-md-8">Here's what's happening with your cafe today.</p>
                     </div>
                     <div class="col-md-4 text-md-end">
                         <button class="btn btn-primary" onclick="location.href='sections/menu.php'">
@@ -45,38 +46,38 @@ include 'includes/header.php';
 
     <!-- Stats Cards -->
     <div class="row g-4 mb-4">
-        <!-- Menu Stats -->
+        <!-- Total Orders Stats -->
         <div class="col-md-4">
             <div class="stat-card">
                 <div class="stat-card-body">
                     <div class="stat-icon bg-primary">
-                        <i class="bi bi-menu-button-wide"></i>
+                        <i class="bi bi-cart"></i>
                     </div>
                     <div class="stat-info">
-                        <h3><?php echo $stats['menu_items']; ?></h3>
-                        <p>Menu Items</p>
+                        <h3><?php echo $stats['orders']; ?></h3>
+                        <p>Total Orders</p>
                     </div>
                 </div>
                 <div class="stat-card-footer">
-                    <a href="sections/menu.php">View Details <i class="bi bi-arrow-right"></i></a>
+                    <a href="sections/orders.php">View Details <i class="bi bi-arrow-right"></i></a>
                 </div>
             </div>
         </div>
 
-        <!-- Gallery Stats -->
+        <!-- Contact Messages Stats -->
         <div class="col-md-4">
             <div class="stat-card">
                 <div class="stat-card-body">
                     <div class="stat-icon bg-success">
-                        <i class="bi bi-images"></i>
+                        <i class="bi bi-envelope"></i>
                     </div>
                     <div class="stat-info">
-                        <h3><?php echo $stats['gallery_items']; ?></h3>
-                        <p>Gallery Items</p>
+                        <h3><?php echo $stats['messages']; ?></h3>
+                        <p>Contact Messages</p>
                     </div>
                 </div>
                 <div class="stat-card-footer">
-                    <a href="sections/gallery.php">View Details <i class="bi bi-arrow-right"></i></a>
+                    <a href="sections/contact_messages.php">View Details <i class="bi bi-arrow-right"></i></a>
                 </div>
             </div>
         </div>

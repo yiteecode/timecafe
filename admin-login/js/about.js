@@ -40,17 +40,15 @@ function initializeAboutManagement() {
 function handleAboutSubmit(event) {
     event.preventDefault();
     
-    if (!this.checkValidity()) {
-        this.classList.add('was-validated');
-        return;
-    }
-
-    const submitBtn = this.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
+    const form = this;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    // Show loading state
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="bi bi-hourglass"></i> Saving...';
-
-    const formData = new FormData(this);
+    
+    const formData = new FormData(form);
     formData.append('action', 'update');
 
     fetch('../handlers/about_handler.php', {
@@ -60,18 +58,17 @@ function handleAboutSubmit(event) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showPopupMessage('About section updated successfully', 'success');
-            location.reload();
+            showNotification('Success', 'About section updated successfully', 'success');
         } else {
             throw new Error(data.message || 'Failed to update about section');
         }
     })
     .catch(error => {
-        showPopupMessage(error.message, 'danger');
+        showNotification('Error', error.message, 'danger');
     })
     .finally(() => {
         submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+        submitBtn.innerHTML = originalBtnText;
     });
 }
 
@@ -166,20 +163,47 @@ function handleFeatureSubmit(event) {
  * @param {number} id - The feature ID to edit
  */
 function editFeature(id) {
-    fetch(`../handlers/about_handler.php?action=get_feature&id=${id}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                const modal = new bootstrap.Modal(document.getElementById('editFeatureModal'));
-                populateFeatureForm(data.data);
-                modal.show();
-            } else {
-                throw new Error(data.message || 'Failed to load feature details');
-            }
-        })
-        .catch(error => {
-            showPopupMessage(error.message, 'danger');
-        });
+    // Show loading state
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-dark bg-opacity-50';
+    loadingOverlay.style.zIndex = '9999';
+    loadingOverlay.innerHTML = '<div class="spinner-border text-light" role="status"></div>';
+    document.body.appendChild(loadingOverlay);
+
+    // Create FormData for the request
+    const formData = new FormData();
+    formData.append('action', 'get_feature');
+    formData.append('id', id);
+
+    // Change from GET to POST request
+    fetch('../handlers/about_handler.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success && data.feature) {
+            // Populate the edit form
+            const form = document.getElementById('editFeatureForm');
+            form.querySelector('#editFeatureId').value = data.feature.id;
+            form.querySelector('#editFeatureTitle').value = data.feature.title;
+            form.querySelector('#editFeatureDescription').value = data.feature.description || '';
+            form.querySelector('#editFeatureIcon').value = data.feature.icon || '';
+
+            // Show the modal
+            const modal = new bootstrap.Modal(document.getElementById('editFeatureModal'));
+            modal.show();
+        } else {
+            throw new Error(data.message || 'Failed to load feature details');
+        }
+    })
+    .catch(error => {
+        showNotification('Error', error.message, 'danger');
+    })
+    .finally(() => {
+        // Remove loading overlay
+        document.body.removeChild(loadingOverlay);
+    });
 }
 
 /**
@@ -200,14 +224,14 @@ function deleteFeature(id) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showPopupMessage('Feature deleted successfully', 'success');
+            showNotification('Success', 'Feature deleted successfully', 'success');
             location.reload();
         } else {
             throw new Error(data.message || 'Failed to delete feature');
         }
     })
     .catch(error => {
-        showPopupMessage(error.message, 'danger');
+        showNotification('Error', error.message, 'danger');
     });
 }
 
@@ -234,3 +258,102 @@ function populateFeatureForm(feature) {
     form.querySelector('#editFeatureDescription').value = feature.description;
     form.querySelector('#editFeatureIcon').value = feature.icon;
 }
+
+// Helper function to show notifications
+function showNotification(title, message, type) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    notification.style.zIndex = '9999';
+    notification.innerHTML = `
+        <strong>${title}:</strong> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    // Add to document
+    document.body.appendChild(notification);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.remove();
+    }, 5000);
+}
+
+function addFeature() {
+    const modal = new bootstrap.Modal(document.getElementById('addFeatureModal'));
+    modal.show();
+}
+
+// Add form submission handler for add feature form
+document.getElementById('addFeatureForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass"></i> Adding...';
+    
+    const formData = new FormData(form);
+    formData.append('action', 'add_feature');
+
+    fetch('../handlers/about_handler.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Success', 'Feature added successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('addFeatureModal')).hide();
+            location.reload();
+        } else {
+            throw new Error(data.message || 'Failed to add feature');
+        }
+    })
+    .catch(error => {
+        showNotification('Error', error.message, 'danger');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    });
+});
+
+// Add form submission handler for edit feature form
+document.getElementById('editFeatureForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass"></i> Saving...';
+    
+    const formData = new FormData(form);
+    formData.append('action', 'edit_feature');
+
+    fetch('../handlers/about_handler.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Success', 'Feature updated successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editFeatureModal')).hide();
+            location.reload();
+        } else {
+            throw new Error(data.message || 'Failed to update feature');
+        }
+    })
+    .catch(error => {
+        showNotification('Error', error.message, 'danger');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    });
+});

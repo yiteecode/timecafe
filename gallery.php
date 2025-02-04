@@ -14,6 +14,14 @@ try {
     error_log("Error loading gallery: " . $e->getMessage());
     $gallery_items = [];
 }
+
+// Get current logo
+$logoStmt = $connect->prepare("SELECT setting_value FROM settings WHERE setting_key = 'brand_logo'");
+$logoStmt->execute();
+$logoResult = $logoStmt->get_result();
+$currentLogo = $logoResult->fetch_assoc()['setting_value'] ?? 'time-logo.png';
+// Add cache-busting parameter
+$logoUrl = 'assets/img/' . htmlspecialchars($currentLogo) . '?v=' . time();
 ?>
 
 <!DOCTYPE html>
@@ -38,7 +46,7 @@ try {
     <header id="header" class="header d-flex align-items-center sticky-top">
         <div class="container position-relative d-flex align-items-center justify-content-between">
             <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
-                <img src="assets/img/time-logo.png" alt="time logo">
+                <img src="<?php echo $logoUrl; ?>" alt="time logo">
                 <h1 class="sitename">Time Cafe</h1>
                 <span>.</span>
             </a>

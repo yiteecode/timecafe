@@ -1,0 +1,72 @@
+/* Add these styles to your existing menu.css */
+.menu-item .card {
+    transition: transform 0.2s;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.menu-item .card:hover {
+    transform: translateY(-5px);
+}
+
+.menu-item .card-img-top {
+    height: 200px;
+    object-fit: cover;
+}
+
+.menu-item .price {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: #0d6efd;
+}
+
+.order-btn {
+    min-width: 100px;
+}
+
+/* Modal styles */
+.modal-header.bg-success {
+    background-color: #198754 !important;
+}
+
+.btn-close-white {
+    filter: brightness(0) invert(1);
+}
+
+/* Update these specific styles */
+.menu .menu-item {
+    overflow: hidden;
+    margin-bottom: 40px;
+}
+
+.menu .menu-img {
+    border-radius: 8px;
+    overflow: hidden;
+    transition: 0.5s;
+}
+
+.menu .menu-item .menu-img:hover {
+    transform: scale(1.1);
+}
+
+.menu .menu-item h4 {
+    font-weight: 700;
+    font-size: 24px;
+    margin: 10px 0;
+}
+
+.menu .menu-item .ingredients {
+    font-style: italic;
+    font-size: 14px;
+    margin-bottom: 0;
+}
+
+.menu .menu-item .price {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--color-primary);
+    margin: 15px 0;
+}
+
+.menu .menu-item .order-btn {
+    margin-top: 10px;
+} 

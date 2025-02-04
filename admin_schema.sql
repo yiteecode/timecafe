@@ -3,7 +3,10 @@ CREATE TABLE admins (
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    role ENUM('super_admin', 'admin') NOT NULL DEFAULT 'admin',
+    phone VARCHAR(20),
+    full_name VARCHAR(100)
 );
 
 -- Hero Section
@@ -128,4 +131,35 @@ CREATE TABLE about_features (
     sort_order INT DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-); 
+);
+
+-- Add is_read column to contact_messages table if it doesn't exist
+ALTER TABLE contact_messages 
+ADD COLUMN IF NOT EXISTS is_read TINYINT(1) NOT NULL DEFAULT 0;
+
+-- Create orders table
+CREATE TABLE orders (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    menu_item_id INT NOT NULL,
+    customer_name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    address TEXT NOT NULL,
+    quantity INT NOT NULL DEFAULT 1,
+    status ENUM('pending', 'confirmed', 'delivered', 'cancelled') DEFAULT 'pending',
+    special_instructions TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (menu_item_id) REFERENCES menu_items(id)
+);
+
+CREATE TABLE settings (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    setting_key VARCHAR(50) UNIQUE NOT NULL,
+    setting_value TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+-- Insert default settings
+INSERT INTO settings (setting_key, setting_value) VALUES 
+('brand_logo', 'time-logo.png'); 

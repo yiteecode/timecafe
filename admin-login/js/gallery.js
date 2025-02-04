@@ -122,8 +122,30 @@ function editGalleryItem(id) {
     fetch(`../handlers/gallery_handler.php?action=get&id=${id}`)
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                populateEditForm(data.item);
+            if (data.success && data.item) {
+                // Populate the edit form
+                const form = document.getElementById('editGalleryForm');
+                form.querySelector('#editGalleryId').value = data.item.id;
+                form.querySelector('#editGalleryTitle').value = data.item.title;
+                form.querySelector('#editGalleryDescription').value = data.item.description || '';
+                
+                // Show current image if exists
+                const imagePreview = document.getElementById('editImagePreview');
+                if (data.item.image) {
+                    imagePreview.innerHTML = `
+                        <div class="mb-3">
+                            <label class="form-label">Current Image:</label>
+                            <img src="../../uploads/gallery/${data.item.image}" 
+                                 class="img-thumbnail" 
+                                 style="max-height: 200px;">
+                            <input type="hidden" name="old_image" value="${data.item.image}">
+                        </div>
+                    `;
+                } else {
+                    imagePreview.innerHTML = '';
+                }
+
+                // Show the modal
                 const modal = new bootstrap.Modal(document.getElementById('editGalleryModal'));
                 modal.show();
             } else {
@@ -131,31 +153,8 @@ function editGalleryItem(id) {
             }
         })
         .catch(error => {
-            showPopupMessage(error.message, 'danger');
+            showNotification('Error', error.message, 'danger');
         });
-}
-
-/**
- * Populates the edit form with gallery item data
- * @param {Object} item - The gallery item data
- */
-function populateEditForm(item) {
-    const form = document.getElementById('editGalleryForm');
-    if (!form) return;
-
-    form.querySelector('#editGalleryId').value = item.id;
-    form.querySelector('#editGalleryTitle').value = item.title;
-    form.querySelector('#editGalleryDescription').value = item.description || '';
-    form.querySelector('#editGalleryOldImage').value = item.image;
-
-    // Show current image preview
-    const preview = form.querySelector('#editImagePreview');
-    if (preview && item.image) {
-        preview.innerHTML = `
-            <img src="../../uploads/gallery/${item.image}" 
-                 class="img-fluid rounded mb-2" alt="Current image">
-        `;
-    }
 }
 
 /**
@@ -287,5 +286,43 @@ function showPopupMessage(message, type) {
     // Implement your popup message display logic here
     alert(message);
 }
+
+// Add form submission handler for edit form
+document.getElementById('editGalleryForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass"></i> Saving...';
+    
+    const formData = new FormData(form);
+    formData.append('action', 'edit');
+
+    fetch('../handlers/gallery_handler.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Success', 'Gallery item updated successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('editGalleryModal')).hide();
+            location.reload();
+        } else {
+            throw new Error(data.message || 'Failed to update gallery item');
+        }
+    })
+    .catch(error => {
+        showNotification('Error', error.message, 'danger');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    });
+});
 
 // ... Additional gallery functions (edit, delete, etc.) 

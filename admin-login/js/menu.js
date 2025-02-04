@@ -136,46 +136,96 @@ function showCategoryModal() {
 }
 
 function editMenuItem(id) {
-    fetch(`../handlers/menu_handler.php?action=get&id=${id}`)
+    if (!id || isNaN(id)) {  // Add better ID validation
+        showNotification('Error', 'Menu item ID is required', 'danger');
+        return;
+    }
+
+    fetch(`../handlers/menu_handler.php?action=get&id=${encodeURIComponent(id)}`)
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
+            if (data.success && data.item) {  // Check if item exists
                 populateEditForm(data.item);
-                const modal = new bootstrap.Modal(document.getElementById('editMenuModal'));
-                modal.show();
+                const editModal = new bootstrap.Modal(document.getElementById('editMenuModal'));
+                editModal.show();
             } else {
-                throw new Error(data.message || 'Failed to load menu item');
+                throw new Error(data.message || 'Failed to fetch menu item');
             }
         })
         .catch(error => {
-            showPopupMessage(error.message, 'danger');
+            console.error('Error details:', error);
+            showNotification('Error', error.message, 'danger');
         });
 }
 
 function populateEditForm(item) {
-    document.getElementById('editMenuId').value = item.id;
-    document.getElementById('editMenuName').value = item.name;
-    document.getElementById('editMenuCategory').value = item.category_id;
-    document.getElementById('editMenuPrice').value = item.price;
-    document.getElementById('editMenuDescription').value = item.description;
-    document.getElementById('editMenuOldImage').value = item.image;
+    if (!item || !item.id) {
+        console.error('Invalid item data received');
+        showNotification('Error', 'Invalid item data received', 'danger');
+        return;
+    }
 
-    const preview = document.getElementById('editImagePreview');
-    if (item.image) {
-        preview.innerHTML = `
-            <img src="../../uploads/menu/${item.image}" class="img-fluid rounded" alt="Current image">
-        `;
-    } else {
-        preview.innerHTML = '';
+    const form = document.getElementById('editMenuForm');
+    if (!form) {
+        console.error('Edit form not found');
+        return;
+    }
+
+    try {
+        // Set hidden ID field
+        const idInput = form.querySelector('input[name="id"]');
+        if (!idInput) {
+            throw new Error('ID input field not found');
+        }
+        idInput.value = item.id;
+
+        // Set other form fields with more specific selectors
+        const nameInput = form.querySelector('input[name="name"]');
+        const descriptionInput = form.querySelector('textarea[name="description"]');
+        const priceInput = form.querySelector('input[name="price"]');
+        const categoryInput = form.querySelector('select[name="category_id"]');
+
+        if (nameInput) nameInput.value = item.name || '';
+        if (descriptionInput) descriptionInput.value = item.description || '';
+        if (priceInput) priceInput.value = item.price || '';
+        if (categoryInput) categoryInput.value = item.category_id || '';
+
+        // Debug log to check values
+        console.log('Item data:', item);
+        
+        // Show current image if exists
+        const currentImageContainer = form.querySelector('.current-image');
+        if (currentImageContainer && item.image) {
+            currentImageContainer.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Current Image:</label>
+                    <img src="../../uploads/menu/${item.image}" 
+                         class="img-thumbnail" 
+                         style="max-height: 100px; display: block;">
+                    <small class="text-muted">Current: ${item.image}</small>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('Error populating form:', error);
+        showNotification('Error', 'Failed to populate form fields: ' + error.message, 'danger');
     }
 }
 
-function deleteMenuItem(id) {
-    if (!confirm('Are you sure you want to delete this menu item?')) return;
-
-    const formData = new FormData();
-    formData.append('action', 'delete');
-    formData.append('id', id);
+// Handle edit form submission
+document.getElementById('editMenuForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Updating...';
+    
+    const formData = new FormData(form);
+    formData.append('action', 'update');
 
     fetch('../handlers/menu_handler.php', {
         method: 'POST',
@@ -184,14 +234,128 @@ function deleteMenuItem(id) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            showPopupMessage('Menu item deleted successfully', 'success');
-            location.reload();
+            showNotification('Success', 'Menu item updated successfully', 'success');
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('editMenuModal')).hide();
+            // Reload the page instead of calling loadMenuItems
+            window.location.reload();
         } else {
-            throw new Error(data.message || 'Failed to delete menu item');
+            throw new Error(data.message || 'Failed to update menu item');
         }
     })
     .catch(error => {
-        showPopupMessage(error.message, 'danger');
+        showNotification('Error', error.message, 'danger');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    });
+});
+
+function showNotification(title, message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center border-0 bg-${type} text-white`;
+    toast.setAttribute('role', 'alert');
+    toast.setAttribute('aria-live', 'assertive');
+    toast.setAttribute('aria-atomic', 'true');
+    
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <strong>${title}</strong><br>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    const container = document.createElement('div');
+    container.className = 'toast-container position-fixed top-0 end-0 p-3';
+    container.style.zIndex = '1050';
+    container.appendChild(toast);
+    document.body.appendChild(container);
+
+    const bsToast = new bootstrap.Toast(toast, {
+        animation: true,
+        autohide: true,
+        delay: 3000
+    });
+    
+    bsToast.show();
+
+    toast.addEventListener('hidden.bs.toast', () => {
+        container.remove();
+    });
+}
+
+function deleteMenuItem(id) {
+    // Create and show a confirmation modal
+    const confirmModal = document.createElement('div');
+    confirmModal.className = 'modal fade';
+    confirmModal.innerHTML = `
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm Deletion</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to delete this menu item? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="confirmDelete">Delete</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(confirmModal);
+    
+    const modal = new bootstrap.Modal(confirmModal);
+    modal.show();
+    
+    // Handle delete confirmation
+    document.getElementById('confirmDelete').addEventListener('click', function() {
+        const formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('id', id);
+
+        // Show loading state
+        this.disabled = true;
+        this.innerHTML = '<i class="bi bi-hourglass-split"></i> Deleting...';
+
+        fetch('../handlers/menu_handler.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showNotification('Success', 'Menu item deleted successfully', 'success');
+                modal.hide();
+                window.location.reload();
+            } else {
+                throw new Error(data.message || 'Failed to delete menu item');
+            }
+        })
+        .catch(error => {
+            console.error('Delete error:', error);
+            showNotification('Error', error.message, 'danger');
+        })
+        .finally(() => {
+            modal.hide();
+            confirmModal.remove();
+        });
+    });
+
+    // Clean up modal when hidden
+    confirmModal.addEventListener('hidden.bs.modal', function() {
+        confirmModal.remove();
     });
 }
 
@@ -251,3 +415,45 @@ function showPopupMessage(message, type) {
     // You can implement a more sophisticated message display
     alert(message);
 }
+
+// Add this new function for handling new menu item submission
+document.getElementById('addMenuForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const form = this;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalBtnText = submitBtn.innerHTML;
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Adding...';
+    
+    const formData = new FormData(form);
+    formData.append('action', 'add');  // Set the correct action
+
+    fetch('../handlers/menu_handler.php', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('Success', 'Menu item added successfully', 'success');
+            form.reset(); // Reset the form
+            clearImagePreview(); // Clear the image preview
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('addMenuModal')).hide();
+            // Reload the page
+            window.location.reload();
+        } else {
+            throw new Error(data.message || 'Failed to add menu item');
+        }
+    })
+    .catch(error => {
+        showNotification('Error', error.message, 'danger');
+    })
+    .finally(() => {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalBtnText;
+    });
+});

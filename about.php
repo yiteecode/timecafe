@@ -1,3 +1,17 @@
+<?php
+require_once 'db-config.php';
+
+// Get current logo
+$stmt = $connect->prepare("SELECT setting_value FROM settings WHERE setting_key = 'brand_logo'");
+$stmt->execute();
+$result = $stmt->get_result();
+$currentLogo = $result->fetch_assoc()['setting_value'] ?? 'time-logo.png';
+
+// Add cache-busting parameter
+$logoUrl = 'assets/img/' . htmlspecialchars($currentLogo) . '?v=' . time();
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -9,8 +23,8 @@
   <meta name="keywords" content="">
 
   <!-- Favicons -->
-  <link href="assets/img/time-logo.png" rel="icon">
-  <link href="assets/img/time-logo.png" rel="apple-touch-icon">
+  <link href="<?php echo $logoUrl; ?>" rel="icon">
+  <link href="<?php echo $logoUrl; ?>" rel="apple-touch-icon">
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -36,7 +50,7 @@
 
       <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
         
-        <img src="assets/img/time-logo.png" alt="time logo">
+        <img src="<?php echo $logoUrl; ?>" alt="time logo">
         <h1 class="sitename">Time Cafe</h1>
         <span>.</span>
       </a>
@@ -101,7 +115,8 @@ try {
     $about = $stmt->get_result()->fetch_assoc();
 
     $stmt = $connect->prepare("
-        SELECT * FROM about_features 
+        SELECT id, title, description, icon, sort_order 
+        FROM about_features 
         WHERE active = 1 
         ORDER BY sort_order, created_at DESC
     ");
@@ -115,72 +130,96 @@ try {
 ?>
 
 <!-- About Section -->
-<section id="about" class="about">
-    <div class="container" data-aos="fade-up">
-        <div class="section-title">
-            <h2>About Us</h2>
-            <?php if (!empty($about['subheading'])): ?>
-                <p><?php echo htmlspecialchars($about['subheading']); ?></p>
-            <?php endif; ?>
-        </div>
+<section id="about" class="about section">
+    <!-- Section Title -->
+    <div class="container section-title" data-aos="fade-up">
+        <h2>About Us</h2>
+        <p><span>Discover</span> <span class="description-title">Our Story</span></p>
+    </div>
 
+    <div class="container">
         <div class="row gy-4">
-            <?php if (!empty($about['image'])): ?>
-                <div class="col-lg-7 position-relative about-img" 
-                     style="background-image: url('uploads/about/<?php echo htmlspecialchars($about['image']); ?>');" 
-                     data-aos="fade-up" data-aos-delay="150">
-                    <?php if (!empty($about['video_url'])): ?>
-                        <div class="play-btn">
-                            <a href="<?php echo htmlspecialchars($about['video_url']); ?>" 
-                               class="glightbox play-btn"></a>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            <?php endif; ?>
+            <div class="col-lg-7" data-aos="fade-up" data-aos-delay="100">
+                <?php if (!empty($about['image'])): ?>
+                    <div class="about-img-wrapper">
+                        <img src="uploads/about/<?php echo htmlspecialchars($about['image']); ?>" 
+                             class="img-fluid rounded shadow" alt="Time Cafe">
+                    </div>
+                <?php endif; ?>
 
-            <div class="col-lg-5 d-flex align-items-end" data-aos="fade-up" data-aos-delay="300">
-                <div class="content ps-0 ps-lg-5">
-                    <?php if (!empty($about['heading'])): ?>
-                        <h3><?php echo htmlspecialchars($about['heading']); ?></h3>
-                    <?php endif; ?>
-                    
-                    <?php if (!empty($about['main_content'])): ?>
-                        <p><?php echo nl2br(htmlspecialchars($about['main_content'])); ?></p>
-                    <?php endif; ?>
-
-                    <div class="position-relative mt-4">
-                        <?php foreach ($features as $feature): ?>
-                            <div class="feature-item" data-aos="fade-up" data-aos-delay="150">
-                                <i class="bi bi-<?php echo htmlspecialchars($feature['icon']); ?>"></i>
-                                <div>
-                                    <h4><?php echo htmlspecialchars($feature['title']); ?></h4>
-                                    <p><?php echo htmlspecialchars($feature['description']); ?></p>
+                <!-- Mission & Vision Cards -->
+                <div class="row mt-4 g-4">
+                    <?php if (!empty($about['mission'])): ?>
+                    <div class="col-md-6">
+                        <div class="mission-card h-100">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-body text-center p-4">
+                                    <i class="bi bi-bullseye display-4 text-primary mb-3"></i>
+                                    <h3 class="card-title h4">Our Mission</h3>
+                                    <p class="card-text">
+                                        <?php echo nl2br(htmlspecialchars($about['mission'])); ?>
+                                    </p>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
+                        </div>
                     </div>
+                    <?php endif; ?>
 
-                    <?php if (!empty($about['mission']) || !empty($about['vision'])): ?>
-                        <div class="row mt-5">
-                            <?php if (!empty($about['mission'])): ?>
-                                <div class="col-md-6">
-                                    <div class="mission-vision-box">
-                                        <h4>Our Mission</h4>
-                                        <p><?php echo nl2br(htmlspecialchars($about['mission'])); ?></p>
-                                    </div>
+                    <?php if (!empty($about['vision'])): ?>
+                    <div class="col-md-6">
+                        <div class="vision-card h-100">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-body text-center p-4">
+                                    <i class="bi bi-eye display-4 text-primary mb-3"></i>
+                                    <h3 class="card-title h4">Our Vision</h3>
+                                    <p class="card-text">
+                                        <?php echo nl2br(htmlspecialchars($about['vision'])); ?>
+                                    </p>
                                 </div>
-                            <?php endif; ?>
-                            
-                            <?php if (!empty($about['vision'])): ?>
-                                <div class="col-md-6">
-                                    <div class="mission-vision-box">
-                                        <h4>Our Vision</h4>
-                                        <p><?php echo nl2br(htmlspecialchars($about['vision'])); ?></p>
-                                    </div>
-                                </div>
-                            <?php endif; ?>
+                            </div>
+                        </div>
+                    </div>
+                    <?php endif; ?>
+                </div>
+
+                <!-- Book a Table Card -->
+                <div class="book-a-table-card mt-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body text-center p-4">
+                            <i class="bi bi-telephone-fill display-4 text-primary mb-3"></i>
+                            <h3 class="card-title">Book a Table</h3>
+                            <p class="card-text h4">+251 912 345 678</p>
+                            <a href="index.php#book-a-table" class="btn btn-primary mt-3">Reserve Now</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5" data-aos="fade-up" data-aos-delay="250">
+                <div class="content ps-0 ps-lg-5">
+                    <?php if (!empty($about['main_content'])): ?>
+                        <div class="about-content mb-4">
+                            <p class="lead fst-italic">
+                                <?php echo nl2br(htmlspecialchars($about['main_content'])); ?>
+                            </p>
                         </div>
                     <?php endif; ?>
+
+                    <div class="features-list">
+                        <ul class="list-unstyled">
+                            <?php foreach ($features as $feature): ?>
+                                <li class="mb-3 d-flex align-items-start">
+                                    <i class="bi bi-<?php echo htmlspecialchars($feature['icon'] ?: 'check-circle-fill'); ?> text-primary me-2 mt-1"></i>
+                                    <div>
+                                        <h5 class="mb-1"><?php echo htmlspecialchars($feature['title']); ?></h5>
+                                        <p class="text-muted mb-0">
+                                            <?php echo htmlspecialchars($feature['description']); ?>
+                                        </p>
+                                    </div>
+                                </li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>

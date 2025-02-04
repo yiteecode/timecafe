@@ -2,241 +2,251 @@
 session_start();
 require_once '../../db-config.php';
 
-// Check authentication
+header('Content-Type: application/json');
+
 if (!isset($_SESSION['admin_id'])) {
-    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit;
 }
 
-// Handle different actions
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
-
-switch ($action) {
-    case 'add':
-        handleAddItem();
-        break;
-    case 'edit':
-        handleEditItem();
-        break;
-    case 'delete':
-        handleDeleteItem();
-        break;
-    case 'get':
-        handleGetItem();
-        break;
-    case 'update_order':
-        handleUpdateOrder();
-        break;
-    default:
-        echo json_encode(['success' => false, 'message' => 'Invalid action']);
-        break;
-}
-
-function handleAddItem() {
-    global $connect;
+try {
+    $action = $_POST['action'] ?? $_GET['action'] ?? '';
     
-    // Validate required fields
-    if (empty($_POST['name']) || empty($_POST['category_id']) || empty($_POST['price'])) {
-        echo json_encode(['success' => false, 'message' => 'Please fill in all required fields']);
-        return;
+    if (empty($action)) {
+        throw new Exception('No action specified');
     }
 
-    // Handle image upload
-    $image_name = '';
-    if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-        $image_name = handleImageUpload($_FILES['image']);
-        if (!$image_name) {
-            echo json_encode(['success' => false, 'message' => 'Failed to upload image']);
-            return;
-        }
-    }
+    switch ($action) {
+        case 'add':
+            // Validate required fields
+            if (empty($_POST['name']) || empty($_POST['price']) || empty($_POST['category_id'])) {
+                throw new Exception('Name, price and category are required');
+            }
 
-    // Get the next sort order
-    $sort_query = "SELECT MAX(sort_order) as max_order FROM menu_items WHERE category_id = ?";
-    $stmt = $connect->prepare($sort_query);
-    $stmt->bind_param('i', $_POST['category_id']);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $next_order = ($result->fetch_assoc()['max_order'] ?? 0) + 1;
+            // Handle image upload if present
+            $image_name = null;
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $allowed_types = ['image/jpeg', 'image/png', 'image/webp'];
+                $max_size = 2 * 1024 * 1024; // 2MB
 
-    // Insert menu item
-    $query = "INSERT INTO menu_items (name, category_id, description, price, image, sort_order, active) 
-              VALUES (?, ?, ?, ?, ?, ?, 1)";
+                if (!in_array($_FILES['image']['type'], $allowed_types)) {
+                    throw new Exception('Invalid image format. Only JPG, PNG and WEBP are allowed');
+                }
+
+                if ($_FILES['image']['size'] > $max_size) {
+                    throw new Exception('Image size must be less than 2MB');
+                }
+
+                $upload_dir = '../../uploads/menu/';
+                if (!file_exists($upload_dir)) {
+                    mkdir($upload_dir, 0777, true);
+                }
+
+                $image_name = uniqid() . '_' . basename($_FILES['image']['name']);
+                $upload_path = $upload_dir . $image_name;
+
+                if (!move_uploaded_file($_FILES['image']['tmp_name'], $upload_path)) {
+                    throw new Exception('Failed to upload image');
+                }
+            }
+
+            // Insert into database
+            $stmt = $connect->prepare("
+                INSERT INTO menu_items (name, description, price, category_id, image) 
+                VALUES (?, ?, ?, ?, ?)
+            ");
+
+            if (!$stmt) {
+                throw new Exception('Prepare statement failed: ' . $connect->error);
+            }
+
+            $name = $_POST['name'];
+            $description = $_POST['description'] ?? '';
+            $price = floatval($_POST['price']);
+            $category_id = intval($_POST['category_id']);
+
+            $stmt->bind_param("ssdis", $name, $description, $price, $category_id, $image_name);
+
+            if (!$stmt->execute()) {
+                // If image was uploaded but insert failed, delete the uploaded image
+                if ($image_name && file_exists($upload_dir . $image_name)) {
+                    unlink($upload_dir . $image_name);
+                }
+                throw new Exception('Failed to add menu item: ' . $stmt->error);
+            }
+
+            $stmt->close();
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Menu item added successfully'
+            ]);
+            break;
+
+        case 'get':
+            if (empty($_GET['id'])) {
+                throw new Exception('Menu item ID is required');
+            }
+
+            $id = intval($_GET['id']);
+            if ($id <= 0) {
+                throw new Exception('Invalid menu item ID');
+            }
+            
+            error_log("Fetching menu item with ID: " . $id);
+            
+            $stmt = $connect->prepare("SELECT id, name, description, price, category_id, image FROM menu_items WHERE id = ?");
+            if (!$stmt) {
+                throw new Exception('Prepare statement failed: ' . $connect->error);
+            }
+            
+            $stmt->bind_param("i", $id);
+            
+            if (!$stmt->execute()) {
+                throw new Exception('Execute failed: ' . $stmt->error);
+            }
+            
+            $result = $stmt->get_result();
+            $item = $result->fetch_assoc();
+            
+            if ($item) {
+                echo json_encode([
+                    'success' => true, 
+                    'item' => $item
+                ]);
+            } else {
+                throw new Exception('Menu item not found');
+            }
+            $stmt->close();
+            break;
+
+        case 'update':
+            if (empty($_POST['id'])) {
+                throw new Exception('Menu item ID is required');
+            }
+
+            $id = $_POST['id'];
+            $name = trim($_POST['name']);
+            $description = trim($_POST['description']);
+            $price = floatval($_POST['price']);
+            $category_id = intval($_POST['category_id']);
+
+            // Validate inputs
+            if (empty($name)) throw new Exception('Name is required');
+            if ($price <= 0) throw new Exception('Price must be greater than zero');
+            if ($category_id <= 0) throw new Exception('Category is required');
+
+            // Handle image upload if provided
+            $image_update = '';
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
+                $allowed_types = ['image/jpeg', 'image/png', 'image/webp'];
+                if (!in_array($_FILES['image']['type'], $allowed_types)) {
+                    throw new Exception('Invalid image type. Please use JPG, PNG, or WebP');
+                }
+
+                $image_filename = uniqid() . '_' . basename($_FILES['image']['name']);
+                $upload_dir = '../../uploads/menu/';
+                
+                if (move_uploaded_file($_FILES['image']['tmp_name'], $upload_dir . $image_filename)) {
+                    // Get and delete old image
+                    $stmt = $connect->prepare("SELECT image FROM menu_items WHERE id = ?");
+                    $stmt->bind_param("i", $id);
+                    $stmt->execute();
+                    $old_image = $stmt->get_result()->fetch_assoc()['image'];
+                    
+                    if ($old_image && file_exists($upload_dir . $old_image)) {
+                        unlink($upload_dir . $old_image);
+                    }
+                    
+                    $image_update = ", image = ?";
+                } else {
+                    throw new Exception('Failed to upload image');
+                }
+            }
+
+            // Update database
+            $query = "UPDATE menu_items SET 
+                     name = ?, 
+                     description = ?, 
+                     price = ?, 
+                     category_id = ?" . $image_update . " 
+                     WHERE id = ? AND active = 1";
             
             $stmt = $connect->prepare($query);
-    $stmt->bind_param('sisdsi', 
-        $_POST['name'],
-        $_POST['category_id'],
-        $_POST['description'],
-        $_POST['price'],
-        $image_name,
-        $next_order
-    );
-
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Menu item added successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to add menu item']);
-    }
-}
-
-function handleEditItem() {
-    global $connect;
-    
-    if (empty($_POST['id']) || empty($_POST['name']) || empty($_POST['category_id']) || empty($_POST['price'])) {
-        echo json_encode(['success' => false, 'message' => 'Please fill in all required fields']);
-        return;
-    }
-
-    $image_name = $_POST['old_image'] ?? '';
-    if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-        $new_image = handleImageUpload($_FILES['image']);
-        if ($new_image) {
-            // Delete old image if exists
-            if (!empty($image_name)) {
-                deleteImage($image_name);
+            
+            if ($image_update) {
+                $stmt->bind_param("ssdisi", $name, $description, $price, $category_id, $image_filename, $id);
+            } else {
+                $stmt->bind_param("ssdii", $name, $description, $price, $category_id, $id);
             }
-            $image_name = $new_image;
-        }
-    }
 
-    $query = "UPDATE menu_items SET 
-              name = ?, 
-              category_id = ?, 
-              description = ?, 
-              price = ?, 
-              image = ?
-              WHERE id = ?";
-    
-    $stmt = $connect->prepare($query);
-    $stmt->bind_param('sisdsi',
-        $_POST['name'],
-        $_POST['category_id'],
-        $_POST['description'],
-        $_POST['price'],
-        $image_name,
-        $_POST['id']
-    );
+            if (!$stmt->execute()) {
+                throw new Exception("Failed to update menu item: " . $stmt->error);
+            }
 
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Menu item updated successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to update menu item']);
-    }
-}
-
-function handleDeleteItem() {
-    global $connect;
-    
-    if (empty($_POST['id'])) {
-        echo json_encode(['success' => false, 'message' => 'Invalid item ID']);
-        return;
-    }
-
-    // Get the image name before deleting
-    $query = "SELECT image FROM menu_items WHERE id = ?";
-    $stmt = $connect->prepare($query);
-    $stmt->bind_param('i', $_POST['id']);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $item = $result->fetch_assoc();
-
-    // Soft delete the item
-    $query = "UPDATE menu_items SET active = 0 WHERE id = ?";
-    $stmt = $connect->prepare($query);
-    $stmt->bind_param('i', $_POST['id']);
-
-    if ($stmt->execute()) {
-        // Delete the image file if it exists
-        if (!empty($item['image'])) {
-            deleteImage($item['image']);
-        }
-        echo json_encode(['success' => true, 'message' => 'Menu item deleted successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete menu item']);
-    }
-}
-
-function handleGetItem() {
-    global $connect;
-    
-    if (empty($_GET['id'])) {
-        echo json_encode(['success' => false, 'message' => 'Invalid item ID']);
-        return;
-    }
-
-    $query = "SELECT * FROM menu_items WHERE id = ?";
-    $stmt = $connect->prepare($query);
-    $stmt->bind_param('i', $_GET['id']);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $item = $result->fetch_assoc();
-
-    if ($item) {
-        echo json_encode(['success' => true, 'item' => $item]);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Item not found']);
-    }
-}
-
-function handleUpdateOrder() {
-    global $connect;
-    
-    $data = json_decode(file_get_contents('php://input'), true);
-    if (empty($data['items'])) {
-        echo json_encode(['success' => false, 'message' => 'No items to update']);
-        return;
-    }
-
-    $success = true;
-    foreach ($data['items'] as $item) {
-        $query = "UPDATE menu_items SET sort_order = ? WHERE id = ?";
-        $stmt = $connect->prepare($query);
-        $stmt->bind_param('ii', $item['order'], $item['id']);
-        if (!$stmt->execute()) {
-            $success = false;
+            echo json_encode([
+                'success' => true,
+                'message' => 'Menu item updated successfully',
+                'data' => [
+                    'id' => $id,
+                    'name' => $name,
+                    'description' => $description,
+                    'price' => $price,
+                    'category_id' => $category_id,
+                    'image' => $image_filename ?? null
+                ]
+            ]);
             break;
-        }
+
+        case 'delete':
+            if (empty($_POST['id'])) {
+                throw new Exception('Menu item ID is required');
+            }
+
+            $id = intval($_POST['id']);
+            
+            // First get the image filename to delete
+            $stmt = $connect->prepare("SELECT image FROM menu_items WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $item = $result->fetch_assoc();
+            
+            // Delete from database
+            $stmt = $connect->prepare("DELETE FROM menu_items WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            
+            if (!$stmt->execute()) {
+                throw new Exception('Failed to delete menu item: ' . $stmt->error);
+            }
+            
+            // If deletion was successful and there was an image, delete it
+            if ($stmt->affected_rows > 0 && !empty($item['image'])) {
+                $image_path = '../../uploads/menu/' . $item['image'];
+                if (file_exists($image_path)) {
+                    unlink($image_path);
+                }
+            }
+            
+            $stmt->close();
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Menu item deleted successfully'
+            ]);
+            break;
+
+        default:
+            throw new Exception('Invalid action');
     }
 
-    echo json_encode(['success' => $success]);
+} catch (Exception $e) {
+    error_log("Menu handler error: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => $e->getMessage()
+    ]);
 }
 
-function handleImageUpload($file) {
-    $upload_dir = '../../uploads/menu/';
-    if (!file_exists($upload_dir)) {
-        mkdir($upload_dir, 0777, true);
-    }
-
-    $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $allowed_types = ['jpg', 'jpeg', 'png', 'webp'];
-    
-    if (!in_array($file_extension, $allowed_types)) {
-        return false;
-    }
-
-    $max_size = 2 * 1024 * 1024; // 2MB
-    if ($file['size'] > $max_size) {
-        return false;
-    }
-
-    $new_filename = uniqid() . '.' . $file_extension;
-    $destination = $upload_dir . $new_filename;
-
-    if (move_uploaded_file($file['tmp_name'], $destination)) {
-        return $new_filename;
-    }
-
-    return false;
-}
-
-function deleteImage($filename) {
-    $file_path = '../../uploads/menu/' . $filename;
-    if (file_exists($file_path)) {
-        unlink($file_path);
-    }
-}
-
-mysqli_close($connect);
+exit;
 ?> 

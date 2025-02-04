@@ -36,6 +36,15 @@ try {
     $categories = [];
     $items_by_category = [];
 }
+
+// Get current logo
+$logoStmt = $connect->prepare("SELECT setting_value FROM settings WHERE setting_key = 'brand_logo'");
+$logoStmt->execute();
+$logoResult = $logoStmt->get_result();
+$currentLogo = $logoResult->fetch_assoc()['setting_value'] ?? 'time-logo.png';
+// Add cache-busting parameter
+$logoUrl = 'assets/img/' . htmlspecialchars($currentLogo) . '?v=' . time();
+
 ?>
 
 <!DOCTYPE html>
@@ -49,8 +58,8 @@ try {
   <meta name="keywords" content="">
 
   <!-- Favicons -->
-  <link href="assets/img/time-logo.png" rel="icon">
-  <link href="assets/img/time-logo.png" rel="apple-touch-icon">
+  <link href="<?php echo $logoUrl; ?>" rel="icon">
+  <link href="<?php echo $logoUrl; ?>" rel="apple-touch-icon">
 
   <!-- Fonts -->
   <link href="https://fonts.googleapis.com" rel="preconnect">
@@ -76,7 +85,7 @@ try {
 
       <a href="index.php" class="logo d-flex align-items-center me-auto me-xl-0">
         
-        <img src="assets/img/time-logo.png" alt="time logo">
+        <img src="<?php echo $logoUrl; ?>" alt="time logo">
         <h1 class="sitename">Time Cafe</h1>
         <span>.</span>
       </a>
@@ -167,22 +176,25 @@ try {
             <?php if (isset($items_by_category[$category['id']])): ?>
               <?php foreach ($items_by_category[$category['id']] as $item): ?>
           <div class="col-lg-4 menu-item">
-                  <?php if (!empty($item['image'])): ?>
-                    <a href="uploads/menu/<?php echo htmlspecialchars($item['image']); ?>" 
-                       class="glightbox">
-                      <img src="uploads/menu/<?php echo htmlspecialchars($item['image']); ?>" 
-                           class="menu-img img-fluid" 
-                           alt="<?php echo htmlspecialchars($item['name']); ?>">
-                    </a>
-                  <?php endif; ?>
-                  
-                  <h4><?php echo htmlspecialchars($item['name']); ?></h4>
+            <?php if (!empty($item['image'])): ?>
+                <a href="uploads/menu/<?php echo htmlspecialchars($item['image']); ?>" class="glightbox">
+                    <img src="uploads/menu/<?php echo htmlspecialchars($item['image']); ?>" 
+                         class="menu-img img-fluid" 
+                         alt="<?php echo htmlspecialchars($item['name']); ?>">
+                </a>
+            <?php endif; ?>
+            <h4><?php echo htmlspecialchars($item['name']); ?></h4>
             <p class="ingredients">
-                    <?php echo htmlspecialchars($item['description']); ?>
+                <?php echo htmlspecialchars($item['description']); ?>
             </p>
             <p class="price">
-                    ETB <?php echo number_format($item['price'], 2); ?>
-                  </p>
+                ETB <?php echo number_format($item['price'], 2); ?>
+            </p>
+            <button type="button" 
+                    class="btn btn-primary order-btn" 
+                    onclick="openOrderModal(<?php echo $item['id']; ?>, '<?php echo addslashes($item['name']); ?>', <?php echo $item['price']; ?>)">
+                Order Now
+            </button>
         </div>
               <?php endforeach; ?>
             <?php else: ?>
@@ -198,6 +210,80 @@ try {
   </div>
 
 </section><!-- /Menu Section -->
+
+<!-- Order Modal -->
+<div class="modal fade" id="orderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Place Order</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="orderForm">
+                    <input type="hidden" name="menu_item_id" id="menuItemId">
+                    <input type="hidden" name="menu_item_name" id="menuItemName">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Selected Item</label>
+                        <div id="selectedItem" class="form-control-plaintext"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Quantity</label>
+                        <input type="number" class="form-control" name="quantity" min="1" value="1" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Your Name</label>
+                        <input type="text" class="form-control" name="customer_name" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" name="email" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Phone</label>
+                        <input type="tel" class="form-control" name="phone" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Delivery Address</label>
+                        <textarea class="form-control" name="address" rows="3" required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Special Instructions (Optional)</label>
+                        <textarea class="form-control" name="special_instructions" rows="2"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Place Order</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Success Modal -->
+<div class="modal fade" id="orderSuccessModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Order Placed Successfully!</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">Thank you for your order! We will contact you within 5-10 minutes to confirm your order details.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <footer id="footer" class="footer dark-background">
 
   <div class="container">
@@ -271,6 +357,10 @@ try {
 
 <!-- Main JS File -->
 <script src="assets/js/main.js"></script>
+
+<!-- Add these before closing </body> tag if not already included -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="js/menu.js"></script>
 
 </body>
     </html>

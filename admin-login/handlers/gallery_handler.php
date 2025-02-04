@@ -5,233 +5,187 @@ require_once '../../db-config.php';
 // Debug log
 error_log('Gallery handler request received');
 
-// Check authentication
+header('Content-Type: application/json');
+
 if (!isset($_SESSION['admin_id'])) {
-    header('Content-Type: application/json');
     echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
     exit;
 }
 
-// Handle different actions
-$action = $_POST['action'] ?? $_GET['action'] ?? '';
-
-switch ($action) {
-    case 'add':
-        handleAddItem();
-        break;
-    case 'edit':
-        handleEditItem();
-        break;
-    case 'delete':
-        handleDeleteItem();
-        break;
-    case 'get':
-        handleGetItem();
-        break;
-    case 'update_order':
-        handleUpdateOrder();
-        break;
-    default:
-        echo json_encode(['success' => false, 'message' => 'Invalid action']);
-        break;
-}
-
-function handleAddItem() {
-    global $connect;
+try {
+    $action = $_POST['action'] ?? $_GET['action'] ?? '';
     
-    // Validate required fields
-    if (empty($_POST['title'])) {
-        echo json_encode(['success' => false, 'message' => 'Title is required']);
-        return;
+    if (empty($action)) {
+        throw new Exception('No action specified');
     }
 
-    // Handle image upload
-    if (!isset($_FILES['image']) || $_FILES['image']['error'] !== 0) {
-        echo json_encode(['success' => false, 'message' => 'Image is required']);
-        return;
-    }
-
-    $image_name = handleImageUpload($_FILES['image']);
-    if (!$image_name) {
-        echo json_encode(['success' => false, 'message' => 'Failed to upload image']);
-        return;
-    }
-
-    // Get the next sort order
-    $sort_query = "SELECT MAX(sort_order) as max_order FROM gallery_items";
-    $result = mysqli_query($connect, $sort_query);
-    $next_order = ($result->fetch_assoc()['max_order'] ?? 0) + 1;
-
-    // Insert gallery item
-    $query = "INSERT INTO gallery_items (title, description, image, sort_order, active) 
-              VALUES (?, ?, ?, ?, 1)";
-    
-    $stmt = $connect->prepare($query);
-    $stmt->bind_param('sssi', 
-        $_POST['title'],
-        $_POST['description'],
-        $image_name,
-        $next_order
-    );
-
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Gallery item added successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to add gallery item']);
-    }
-}
-
-function handleEditItem() {
-    global $connect;
-    
-    if (empty($_POST['id']) || empty($_POST['title'])) {
-        echo json_encode(['success' => false, 'message' => 'Required fields are missing']);
-        return;
-    }
-
-    $image_name = $_POST['old_image'] ?? '';
-    if (isset($_FILES['image']) && $_FILES['image']['error'] === 0) {
-        $new_image = handleImageUpload($_FILES['image']);
-        if ($new_image) {
-            // Delete old image if exists
-            if (!empty($image_name)) {
-                deleteImage($image_name);
+    switch ($action) {
+        case 'add':
+            // Validate required fields
+            if (empty($_FILES['image'])) {
+                throw new Exception('Image is required');
             }
-            $image_name = $new_image;
-        }
-    }
-
-    $query = "UPDATE gallery_items SET 
-              title = ?, 
-              description = ?, 
-              image = ?
-              WHERE id = ?";
-    
-    $stmt = $connect->prepare($query);
-    $stmt->bind_param('sssi',
-        $_POST['title'],
-        $_POST['description'],
-        $image_name,
-        $_POST['id']
-    );
-
-    if ($stmt->execute()) {
-        echo json_encode(['success' => true, 'message' => 'Gallery item updated successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to update gallery item']);
-    }
-}
-
-function handleDeleteItem() {
-    global $connect;
-    
-    if (empty($_POST['id'])) {
-        echo json_encode(['success' => false, 'message' => 'Invalid item ID']);
-        return;
-    }
-
-    // Get the image name before deleting
-    $query = "SELECT image FROM gallery_items WHERE id = ?";
-    $stmt = $connect->prepare($query);
-    $stmt->bind_param('i', $_POST['id']);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $item = $result->fetch_assoc();
-
-    // Soft delete the item
-    $query = "UPDATE gallery_items SET active = 0 WHERE id = ?";
-    $stmt = $connect->prepare($query);
-    $stmt->bind_param('i', $_POST['id']);
-
-    if ($stmt->execute()) {
-        // Delete the image file if it exists
-        if (!empty($item['image'])) {
-            deleteImage($item['image']);
-        }
-        echo json_encode(['success' => true, 'message' => 'Gallery item deleted successfully']);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Failed to delete gallery item']);
-    }
-}
-
-function handleGetItem() {
-    global $connect;
-    
-    if (empty($_GET['id'])) {
-        echo json_encode(['success' => false, 'message' => 'Invalid item ID']);
-        return;
-    }
-
-    $query = "SELECT * FROM gallery_items WHERE id = ?";
-    $stmt = $connect->prepare($query);
-    $stmt->bind_param('i', $_GET['id']);
-    $stmt->execute();
-    $result = $stmt->get_result();
-    $item = $result->fetch_assoc();
-
-    if ($item) {
-        echo json_encode(['success' => true, 'item' => $item]);
-    } else {
-        echo json_encode(['success' => false, 'message' => 'Item not found']);
-    }
-}
-
-function handleUpdateOrder() {
-    global $connect;
-    
-    $data = json_decode(file_get_contents('php://input'), true);
-    if (empty($data['items'])) {
-        echo json_encode(['success' => false, 'message' => 'No items to update']);
-        return;
-    }
-
-    $success = true;
-    foreach ($data['items'] as $item) {
-        $query = "UPDATE gallery_items SET sort_order = ? WHERE id = ?";
-        $stmt = $connect->prepare($query);
-        $stmt->bind_param('ii', $item['order'], $item['id']);
-        if (!$stmt->execute()) {
-            $success = false;
+            
+            // Handle image upload
+            $image = $_FILES['image'];
+            $allowed_types = ['image/jpeg', 'image/png', 'image/webp'];
+            
+            if (!in_array($image['type'], $allowed_types)) {
+                throw new Exception('Invalid image format. Only JPG, PNG and WEBP are allowed');
+            }
+            
+            $filename = uniqid() . '_' . basename($image['name']);
+            $upload_path = '../../uploads/gallery/' . $filename;
+            
+            if (!move_uploaded_file($image['tmp_name'], $upload_path)) {
+                throw new Exception('Failed to upload image');
+            }
+            
+            // Insert into database
+            $stmt = $connect->prepare("INSERT INTO gallery (title, description, image) VALUES (?, ?, ?)");
+            $title = $_POST['title'] ?? '';
+            $description = $_POST['description'] ?? '';
+            $stmt->bind_param("sss", $title, $description, $filename);
+            
+            if (!$stmt->execute()) {
+                // Delete uploaded image if database insert fails
+                unlink($upload_path);
+                throw new Exception('Failed to add gallery item: ' . $stmt->error);
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Gallery item added successfully'
+            ]);
             break;
-        }
+
+        case 'edit':
+            if (empty($_POST['id'])) {
+                throw new Exception('Gallery item ID is required');
+            }
+            
+            $id = intval($_POST['id']);
+            $title = $_POST['title'] ?? '';
+            $description = $_POST['description'] ?? '';
+            
+            // Start with current image
+            $stmt = $connect->prepare("SELECT image FROM gallery WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $current_item = $result->fetch_assoc();
+            $image_name = $current_item['image'];
+
+            // Handle new image if uploaded
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $file = $_FILES['image'];
+                $allowed_types = ['image/jpeg', 'image/png', 'image/webp'];
+                
+                if (!in_array($file['type'], $allowed_types)) {
+                    throw new Exception('Invalid image format. Only JPG, PNG and WEBP are allowed');
+                }
+                
+                // Generate new filename
+                $new_image_name = uniqid() . '_' . basename($file['name']);
+                $upload_path = '../../uploads/gallery/' . $new_image_name;
+                
+                if (move_uploaded_file($file['tmp_name'], $upload_path)) {
+                    // Delete old image if exists
+                    if ($image_name && file_exists('../../uploads/gallery/' . $image_name)) {
+                        unlink('../../uploads/gallery/' . $image_name);
+                    }
+                    $image_name = $new_image_name;
+                } else {
+                    throw new Exception('Failed to upload new image');
+                }
+            }
+
+            // Update database
+            $stmt = $connect->prepare("UPDATE gallery SET title = ?, description = ?, image = ? WHERE id = ?");
+            $stmt->bind_param("sssi", $title, $description, $image_name, $id);
+            
+            if (!$stmt->execute()) {
+                // If we uploaded a new image but database update failed, clean it up
+                if (isset($new_image_name) && file_exists('../../uploads/gallery/' . $new_image_name)) {
+                    unlink('../../uploads/gallery/' . $new_image_name);
+                }
+                throw new Exception('Failed to update gallery item: ' . $stmt->error);
+            }
+
+            echo json_encode([
+                'success' => true,
+                'message' => 'Gallery item updated successfully'
+            ]);
+            break;
+
+        case 'delete':
+            if (empty($_POST['id'])) {
+                throw new Exception('Gallery item ID is required');
+            }
+            
+            $id = intval($_POST['id']);
+            
+            // Get image filename before deletion
+            $stmt = $connect->prepare("SELECT image FROM gallery WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $item = $result->fetch_assoc();
+            
+            // Delete from database
+            $stmt = $connect->prepare("DELETE FROM gallery WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            
+            if (!$stmt->execute()) {
+                throw new Exception('Failed to delete gallery item: ' . $stmt->error);
+            }
+            
+            // Delete image file if exists
+            if ($item && $item['image']) {
+                $image_path = '../../uploads/gallery/' . $item['image'];
+                if (file_exists($image_path)) {
+                    unlink($image_path);
+                }
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Gallery item deleted successfully'
+            ]);
+            break;
+
+        case 'get':
+            if (empty($_GET['id'])) {
+                throw new Exception('Gallery item ID is required');
+            }
+            
+            $id = intval($_GET['id']);
+            $stmt = $connect->prepare("SELECT * FROM gallery WHERE id = ?");
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $item = $result->fetch_assoc();
+            
+            if (!$item) {
+                throw new Exception('Gallery item not found');
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'item' => $item
+            ]);
+            break;
+
+        default:
+            throw new Exception('Invalid action');
     }
 
-    echo json_encode(['success' => $success]);
-}
-
-function handleImageUpload($file) {
-    $upload_dir = '../../uploads/gallery/';
-    if (!file_exists($upload_dir)) {
-        mkdir($upload_dir, 0777, true);
-    }
-
-    $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    $allowed_types = ['jpg', 'jpeg', 'png', 'webp'];
-    
-    if (!in_array($file_extension, $allowed_types)) {
-        return false;
-    }
-
-    $max_size = 5 * 1024 * 1024; // 5MB
-    if ($file['size'] > $max_size) {
-        return false;
-    }
-
-    $new_filename = uniqid() . '.' . $file_extension;
-    $destination = $upload_dir . $new_filename;
-
-    if (move_uploaded_file($file['tmp_name'], $destination)) {
-        return $new_filename;
-    }
-
-    return false;
-}
-
-function deleteImage($filename) {
-    $file_path = '../../uploads/gallery/' . $filename;
-    if (file_exists($file_path)) {
-        unlink($file_path);
-    }
+} catch (Exception $e) {
+    error_log("Gallery handler error: " . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => $e->getMessage()
+    ]);
 }
 
 mysqli_close($connect);
